@@ -7,6 +7,13 @@
   <link rel="stylesheet" href="css/style.css" />
   <style>
     /* ── Selettore periodo ── */
+    .period-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
     .period-selector {
       display: flex;
       gap: 6px;
@@ -15,7 +22,6 @@
       border-radius: 8px;
       padding: 4px;
       width: fit-content;
-      margin-bottom: 24px;
     }
     .period-btn {
       padding: 7px 18px;
@@ -29,9 +35,43 @@
       transition: all .18s;
       letter-spacing: .02em;
     }
-    .period-btn.active {
-      background: var(--magenta);
-      color: #fff;
+    .period-btn.active { background: var(--magenta); color: #fff; }
+
+    /* Selettore date personalizzato */
+    .period-custom {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      animation: fadeIn .18s ease;
+    }
+    .period-custom.visible { display: flex; }
+    @keyframes fadeIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; } }
+    .period-custom label {
+      font-size: .72rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .05em; white-space: nowrap;
+    }
+    .period-custom input[type="date"] {
+      border: 1.5px solid var(--border); border-radius: 5px;
+      padding: 5px 8px; font-family: 'Montserrat', sans-serif;
+      font-size: .78rem; color: var(--text); outline: none;
+      cursor: pointer; transition: border-color .18s;
+    }
+    .period-custom input[type="date"]:focus { border-color: var(--blu); }
+    .btn-apply {
+      padding: 6px 14px; background: var(--blu); color: #fff;
+      border: none; border-radius: 5px;
+      font-family: 'Montserrat', sans-serif; font-size: .75rem;
+      font-weight: 700; cursor: pointer; transition: background .18s;
+    }
+    .btn-apply:hover { background: var(--blu-dark); }
+    .period-active-label {
+      font-size: .75rem; font-weight: 600;
+      color: var(--text-muted); white-space: nowrap;
     }
 
     /* ── Stats grid ── */
@@ -42,198 +82,88 @@
       margin-bottom: 24px;
     }
     .stat-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      position: relative;
-      overflow: hidden;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      position: relative; overflow: hidden;
     }
     .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 4px; height: 100%;
-      background: var(--stat-color, var(--blu));
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%; background: var(--stat-color, var(--blu));
     }
     .stat-label {
-      font-size: .68rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      margin-bottom: 6px;
+      font-size: .68rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px;
     }
-    .stat-value {
-      font-size: 1.9rem;
-      font-weight: 800;
-      color: var(--text);
-      line-height: 1;
-    }
-    .stat-sub {
-      font-size: .72rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-      font-weight: 500;
-    }
+    .stat-value { font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .stat-sub   { font-size: .72rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
-    /* ── Dashboard grid layout ── */
-    .dash-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
+    /* ── Dashboard grid ── */
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .dash-full { grid-column: 1 / -1; }
 
-    /* ── Calendario del giorno ── */
+    /* ── Slot calendario ── */
     .slot-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background .15s;
-      border-radius: 6px;
-      padding: 10px 8px;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 8px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .15s; border-radius: 6px;
     }
     .slot-row:hover { background: var(--bg); }
     .slot-row:last-child { border-bottom: none; }
-    .slot-hour {
-      font-size: .75rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      min-width: 42px;
-    }
+    .slot-hour { font-size: .75rem; font-weight: 700; color: var(--text-muted); min-width: 42px; }
     .slot-info { flex: 1; }
-    .slot-course {
-      font-size: .82rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .slot-instructor {
-      font-size: .72rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .slot-bar-wrap {
-      width: 80px;
-    }
-    .slot-bar-bg {
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .slot-bar-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: var(--blu);
-      transition: width .3s;
-    }
+    .slot-course { font-size: .82rem; font-weight: 700; color: var(--text); }
+    .slot-instructor { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
+    .slot-bar-wrap { width: 80px; }
+    .slot-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .slot-bar-fill { height: 100%; border-radius: 3px; background: var(--blu); transition: width .3s; }
     .slot-bar-fill.full { background: var(--magenta); }
-    .slot-count {
-      font-size: .68rem;
-      color: var(--text-muted);
-      margin-top: 3px;
-      text-align: right;
-    }
-    .slot-empty-row {
-      padding: 8px;
-      color: var(--text-muted);
-      font-size: .78rem;
-      font-style: italic;
-    }
+    .slot-count { font-size: .68rem; color: var(--text-muted); margin-top: 3px; text-align: right; }
 
-    /* ── Pannello laterale corsisti ── */
+    /* ── Pannello laterale ── */
     .side-panel {
-      position: fixed;
-      top: 0; right: -380px;
-      width: 360px;
-      height: 100vh;
-      background: #fff;
-      box-shadow: -4px 0 24px rgba(0,0,0,.12);
-      z-index: 300;
-      transition: right .25s ease;
-      display: flex;
-      flex-direction: column;
+      position: fixed; top: 0; right: -380px; width: 360px; height: 100vh;
+      background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,.12);
+      z-index: 300; transition: right .25s ease; display: flex; flex-direction: column;
     }
     .side-panel.open { right: 0; }
     .side-panel-header {
-      padding: 20px 22px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 20px 22px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .side-panel-title {
-      font-size: .95rem;
-      font-weight: 800;
-      color: var(--text);
+    .side-panel-title { font-size: .95rem; font-weight: 800; color: var(--text); }
+    .side-panel-body  { flex: 1; overflow-y: auto; padding: 16px 22px; }
+    .panel-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.3);
+      z-index: 299; display: none;
     }
-    .side-panel-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 22px;
-    }
+    .panel-overlay.open { display: block; }
     .panel-slot-detail {
-      background: var(--bg);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      font-size: .8rem;
+      background: var(--bg); border-radius: var(--radius-sm);
+      padding: 12px 14px; margin-bottom: 14px; font-size: .8rem;
     }
     .panel-slot-detail p { margin-bottom: 4px; color: var(--text-muted); }
     .panel-slot-detail strong { color: var(--text); }
-    .panel-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.3);
-      z-index: 299;
-      display: none;
-    }
-    .panel-overlay.open { display: block; }
     .corsista-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
     }
     .corsista-item:last-child { border-bottom: none; }
     .corsista-avatar {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: var(--blu-light);
-      color: var(--blu);
-      font-size: .75rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--blu-light); color: var(--blu);
+      font-size: .75rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .corsista-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .corsista-name  { font-size: .82rem; font-weight: 600; color: var(--text); }
     .corsista-email { font-size: .72rem; color: var(--text-muted); }
 
-    /* ── Feed attività ── */
+    /* ── Feed ── */
     .feed-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: .8rem;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border); font-size: .8rem;
     }
     .feed-item:last-child { border-bottom: none; }
-    .feed-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--blu);
-      margin-top: 5px;
-      flex-shrink: 0;
-    }
+    .feed-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blu); margin-top: 5px; flex-shrink: 0; }
     .feed-dot.cancel { background: var(--magenta); }
     .feed-dot.new    { background: #1a8a45; }
     .feed-dot.pay    { background: var(--slot-closed); }
@@ -242,84 +172,43 @@
 
     /* ── Alert ── */
     .alert-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 8px;
-      font-size: .8rem;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: .8rem;
     }
     .alert-item:last-child { margin-bottom: 0; }
     .alert-warning { background: #fff5e6; border: 1px solid #f5d89a; }
     .alert-info    { background: var(--blu-light); border: 1px solid #b3d4ea; }
     .alert-item svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
     .alert-warning svg { color: var(--slot-closed); }
-    .alert-info svg    { color: var(--blu); }
+    .alert-info    svg { color: var(--blu); }
     .alert-text { color: var(--text); font-weight: 600; }
     .alert-sub  { color: var(--text-muted); font-size: .72rem; margin-top: 2px; }
 
     /* ── Quick actions ── */
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
+    .quick-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
     .quick-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      padding: 20px 12px;
-      background: #fff;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: all .18s;
-      text-decoration: none;
-      color: var(--text);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 20px 12px; background: #fff; border: 1.5px solid var(--border);
+      border-radius: var(--radius); cursor: pointer; transition: all .18s;
+      text-decoration: none; color: var(--text);
     }
-    .quick-btn:hover {
-      border-color: var(--blu);
-      background: var(--blu-light);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-    }
+    .quick-btn:hover { border-color: var(--blu); background: var(--blu-light); transform: translateY(-2px); box-shadow: var(--shadow); }
     .quick-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      background: var(--blu-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--blu);
+      width: 42px; height: 42px; border-radius: 10px;
+      background: var(--blu-light); display: flex; align-items: center;
+      justify-content: center; color: var(--blu);
     }
     .quick-icon svg { width: 20px; height: 20px; }
-    .quick-label {
-      font-size: .75rem;
-      font-weight: 700;
-      text-align: center;
-      color: var(--text);
-    }
+    .quick-label { font-size: .75rem; font-weight: 700; text-align: center; }
 
-    /* ── Tabelle report ── */
+    /* ── Report tabelle ── */
     .report-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
     .report-table th {
-      padding: 9px 12px;
-      text-align: left;
-      font-size: .67rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
+      padding: 9px 12px; text-align: left; font-size: .67rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em;
+      background: var(--bg); border-bottom: 1px solid var(--border);
     }
-    .report-table td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-    }
+    .report-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
     .report-table tr:last-child td { border-bottom: none; }
     .report-table tr:hover td { background: var(--bg); }
 
@@ -327,6 +216,7 @@
       .stats-grid { grid-template-columns: repeat(2,1fr); }
       .dash-grid  { grid-template-columns: 1fr; }
       .quick-grid { grid-template-columns: repeat(2,1fr); }
+      .period-wrap { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -336,7 +226,6 @@
   <div id="sidebar"></div>
 
   <div class="main-content">
-    <!-- Topbar -->
     <div class="topbar">
       <div class="topbar-title">Dashboard</div>
       <div class="topbar-actions">
@@ -344,15 +233,28 @@
       </div>
     </div>
 
-    <!-- Page content -->
     <div class="page-content">
 
       <!-- Selettore periodo -->
-      <div class="period-selector">
-        <button class="period-btn active" data-period="today">Oggi</button>
-        <button class="period-btn" data-period="week">Settimana</button>
-        <button class="period-btn" data-period="month">Mese</button>
-        <button class="period-btn" data-period="year">Anno</button>
+      <div class="period-wrap">
+        <div class="period-selector">
+          <button class="period-btn active" data-period="today">Oggi</button>
+          <button class="period-btn" data-period="week">Settimana</button>
+          <button class="period-btn" data-period="month">Mese</button>
+          <button class="period-btn" data-period="year">Anno</button>
+          <button class="period-btn" data-period="custom">Personalizzato</button>
+        </div>
+
+        <!-- Date picker personalizzato -->
+        <div class="period-custom" id="customRange">
+          <label>Dal</label>
+          <input type="date" id="dateFrom" />
+          <label>Al</label>
+          <input type="date" id="dateTo" />
+          <button class="btn-apply" id="btnApplyRange">Applica</button>
+        </div>
+
+        <span class="period-active-label" id="periodLabel"></span>
       </div>
 
       <!-- Stat cards -->
@@ -365,7 +267,7 @@
         <div class="stat-card" style="--stat-color:#e6165c">
           <div class="stat-label">Lezioni erogate</div>
           <div class="stat-value" id="statLezioni">—</div>
-          <div class="stat-sub" id="statLezioniSub">nel periodo</div>
+          <div class="stat-sub">nel periodo</div>
         </div>
         <div class="stat-card" style="--stat-color:#1a8a45">
           <div class="stat-label">Prenotazioni</div>
@@ -389,10 +291,8 @@
         </div>
       </div>
 
-      <!-- Riga: Calendario giorno + Feed attività -->
+      <!-- Calendario giorno + Feed -->
       <div class="dash-grid">
-
-        <!-- Calendario del giorno -->
         <div class="card">
           <div class="section-header">
             <div class="card-title">📅 Lezioni di oggi</div>
@@ -401,26 +301,23 @@
             <div class="text-muted" style="padding:20px 0;text-align:center;">Caricamento…</div>
           </div>
         </div>
-
-        <!-- Feed attività -->
         <div class="card">
           <div class="card-title">🕐 Attività recente</div>
           <div id="feedList">
             <div class="text-muted" style="padding:20px 0;text-align:center;">Caricamento…</div>
           </div>
         </div>
-
       </div>
 
       <!-- Alert -->
-      <div class="card mb-4 dash-full" style="margin-bottom:16px;">
+      <div class="card dash-full" style="margin-bottom:16px;">
         <div class="card-title">⚠️ Avvisi</div>
         <div id="alertList">
           <div class="text-muted" style="padding:8px 0;">Caricamento…</div>
         </div>
       </div>
 
-      <!-- Report per corso + per sala -->
+      <!-- Report corsi + sale -->
       <div class="dash-grid">
         <div class="card">
           <div class="card-title">📊 Report per corso</div>
@@ -428,11 +325,8 @@
             <table class="report-table">
               <thead>
                 <tr>
-                  <th>Corso</th>
-                  <th>Lezioni</th>
-                  <th>Prenotazioni</th>
-                  <th>Riempimento</th>
-                  <th>Incasso €</th>
+                  <th>Corso</th><th>Lezioni</th><th>Prenotazioni</th>
+                  <th>Riempimento</th><th>Incasso €</th>
                 </tr>
               </thead>
               <tbody id="reportCorsi">
@@ -441,18 +335,12 @@
             </table>
           </div>
         </div>
-
         <div class="card">
           <div class="card-title">🏠 Report per sala</div>
           <div style="overflow-x:auto;">
             <table class="report-table">
               <thead>
-                <tr>
-                  <th>Sala</th>
-                  <th>Lezioni</th>
-                  <th>Utilizzo</th>
-                  <th>Incasso €</th>
-                </tr>
+                <tr><th>Sala</th><th>Lezioni</th><th>Utilizzo</th><th>Incasso €</th></tr>
               </thead>
               <tbody id="reportSale">
                 <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;">Caricamento…</td></tr>
@@ -505,9 +393,9 @@
         </div>
       </div>
 
-    </div><!-- /page-content -->
-  </div><!-- /main-content -->
-</div><!-- /app-layout -->
+    </div>
+  </div>
+</div>
 
 <!-- Pannello laterale corsisti -->
 <div class="panel-overlay" id="panelOverlay"></div>
@@ -523,9 +411,7 @@
   <div class="side-panel-body" id="panelBody"></div>
 </div>
 
-<!-- Toast container -->
 <div id="toast-container"></div>
-
 <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>
