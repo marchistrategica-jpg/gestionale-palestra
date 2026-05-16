@@ -4,14 +4,11 @@
 
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged }
+import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, collection, doc, getDoc, getDocs,
-  query, where, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ── Firebase config ──────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            "AIzaSyCIYt0tgl0MQbG3KAkpqTg_ZZMykT0w8lw",
   authDomain:        "gestionale-palestra-44dba.firebaseapp.com",
@@ -33,20 +30,20 @@ onAuthStateChanged(auth, async (user) => {
     window.location.href = 'index.html'; return;
   }
   document.body.classList.remove('hidden');
-  initNav(user.uid, snap.data());
+  initSidebar(snap.data());
   initDashboard();
 });
 
-// ── Sidebar nav ──────────────────────────────────────────────
-function initNav(uid, userData) {
+// ── Sidebar ──────────────────────────────────────────────────
+function initSidebar(userData) {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
   const pages = [
-    { href:'dashboard.html',      label:'Dashboard',    icon:'grid' },
-    { href:'anagrafica.html',     label:'Anagrafica',   icon:'users' },
+    { href:'dashboard.html',       label:'Dashboard',   icon:'grid' },
+    { href:'anagrafica.html',      label:'Anagrafica',  icon:'users' },
     { href:'calendario-admin.html',label:'Calendario',  icon:'calendar' },
-    { href:'messaggi.html',       label:'Messaggi',     icon:'message' },
-    { href:'impostazioni.html',   label:'Impostazioni', icon:'settings' }
+    { href:'messaggi.html',        label:'Messaggi',    icon:'message' },
+    { href:'impostazioni.html',    label:'Impostazioni',icon:'settings' }
   ];
   const icons = {
     grid:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
@@ -62,7 +59,6 @@ function initNav(uid, userData) {
       <span class="nav-label">${p.label}</span>
     </a>`).join('');
   const fullName = `${userData.name||''} ${userData.surname||''}`.trim();
-  const avatar   = (userData.name?.[0]||'A').toUpperCase();
   sidebar.innerHTML = `
     <div class="sidebar-header">
       <img src="pittogramma%20Strategica.png" alt="Logo" class="sidebar-logo"/>
@@ -71,7 +67,7 @@ function initNav(uid, userData) {
     <nav class="sidebar-nav">${navHTML}</nav>
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="sidebar-user-avatar">${avatar}</div>
+        <div class="sidebar-user-avatar">${(userData.name?.[0]||'A').toUpperCase()}</div>
         <div class="sidebar-user-info">
           <span class="sidebar-user-name">${fullName||'Admin'}</span>
           <span class="sidebar-user-role">Admin</span>
@@ -85,65 +81,110 @@ function initNav(uid, userData) {
       </button>
     </div>`;
   document.getElementById('btnLogout')?.addEventListener('click', async () => {
-    const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
     await signOut(auth);
     window.location.href = 'index.html';
   });
 }
 
-// ── Helpers data ─────────────────────────────────────────────
-function getDateRange(period) {
-  const now   = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let from, to;
-  if (period === 'today') {
-    from = today;
-    to   = new Date(today.getTime() + 86400000);
-  } else if (period === 'week') {
-    const day = today.getDay() || 7;
-    from = new Date(today); from.setDate(today.getDate() - day + 1);
-    to   = new Date(from);  to.setDate(from.getDate() + 7);
-  } else if (period === 'month') {
-    from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  } else {
-    from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date(now.getFullYear() + 1, 0, 1);
-  }
-  return { from, to };
-}
-
+// ── Helpers ──────────────────────────────────────────────────
 function toYMD(date) {
   return date.toISOString().split('T')[0];
 }
 
+function formatDate(date) {
+  return date.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function getDateRange(period, customFrom, customTo) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let from, to, label;
+
+  if (period === 'today') {
+    from  = today;
+    to    = new Date(today.getTime() + 86400000);
+    label = 'Oggi, ' + today.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
+  } else if (period === 'week') {
+    const day = today.getDay() || 7;
+    from  = new Date(today); from.setDate(today.getDate() - day + 1);
+    to    = new Date(from);  to.setDate(from.getDate() + 7);
+    label = `${formatDate(from)} → ${formatDate(new Date(to.getTime()-1))}`;
+  } else if (period === 'month') {
+    from  = new Date(now.getFullYear(), now.getMonth(), 1);
+    to    = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    label = today.toLocaleDateString('it-IT', { month:'long', year:'numeric' });
+  } else if (period === 'year') {
+    from  = new Date(now.getFullYear(), 0, 1);
+    to    = new Date(now.getFullYear() + 1, 0, 1);
+    label = String(now.getFullYear());
+  } else if (period === 'custom' && customFrom && customTo) {
+    from  = new Date(customFrom);
+    to    = new Date(new Date(customTo).getTime() + 86400000);
+    label = `${formatDate(from)} → ${formatDate(new Date(customTo))}`;
+  } else {
+    from  = today;
+    to    = new Date(today.getTime() + 86400000);
+    label = 'Oggi';
+  }
+  return { from, to, label };
+}
+
 function timeAgo(ts) {
   if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const d    = ts.toDate ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60)   return 'ora';
-  if (diff < 3600) return `${Math.floor(diff/60)} min fa`;
-  if (diff < 86400)return `${Math.floor(diff/3600)} ore fa`;
-  return `${Math.floor(diff/86400)} gg fa`;
+  if (diff < 60)    return 'adesso';
+  if (diff < 3600)  return `${Math.floor(diff/60)} min fa`;
+  if (diff < 86400) return `${Math.floor(diff/3600)} ore fa`;
+  return `${Math.floor(diff/86400)} giorni fa`;
 }
 
 // ── Init dashboard ───────────────────────────────────────────
 let currentPeriod = 'today';
+let customFrom    = null;
+let customTo      = null;
 
 async function initDashboard() {
-  // Data di oggi in topbar
-  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  // Data topbar
   document.getElementById('todayDate').textContent =
-    new Date().toLocaleDateString('it-IT', opts);
+    new Date().toLocaleDateString('it-IT', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-  // Selettore periodo
+  // Imposta date default per il picker personalizzato
+  const todayStr = toYMD(new Date());
+  document.getElementById('dateFrom').value = todayStr;
+  document.getElementById('dateTo').value   = todayStr;
+
+  // Pulsanti periodo
   document.querySelectorAll('.period-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentPeriod = btn.dataset.period;
+
+      // Mostra/nascondi date picker
+      const customRange = document.getElementById('customRange');
+      if (currentPeriod === 'custom') {
+        customRange.classList.add('visible');
+        // Non caricare dati finché l'utente non clicca Applica
+        return;
+      } else {
+        customRange.classList.remove('visible');
+        customFrom = null;
+        customTo   = null;
+      }
       loadAllData();
     });
+  });
+
+  // Applica range personalizzato
+  document.getElementById('btnApplyRange').addEventListener('click', () => {
+    const f = document.getElementById('dateFrom').value;
+    const t = document.getElementById('dateTo').value;
+    if (!f || !t) { alert('Seleziona entrambe le date.'); return; }
+    if (f > t)    { alert('La data "Dal" deve essere precedente alla data "Al".'); return; }
+    customFrom = f;
+    customTo   = t;
+    loadAllData();
   });
 
   // Pannello laterale
@@ -154,16 +195,16 @@ async function initDashboard() {
 }
 
 async function loadAllData() {
-  const { from, to } = getDateRange(currentPeriod);
+  const { from, to, label } = getDateRange(currentPeriod, customFrom, customTo);
   const fromStr = toYMD(from);
   const toStr   = toYMD(to);
 
+  // Mostra etichetta periodo attivo
+  document.getElementById('periodLabel').textContent = label;
+
   // Carica tutto in parallelo
-  const [
-    usersSnap, slotsSnap, bookingsSnap,
-    paymentsSnap, coursesSnap, roomsSnap,
-    instructorsSnap
-  ] = await Promise.all([
+  const [usersSnap, slotsSnap, bookingsSnap, paymentsSnap,
+         coursesSnap, roomsSnap, instructorsSnap] = await Promise.all([
     getDocs(collection(db, 'users')),
     getDocs(collection(db, 'slots')),
     getDocs(collection(db, 'bookings')),
@@ -181,73 +222,59 @@ async function loadAllData() {
   const rooms       = roomsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
   const instructors = instructorsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
 
-  // Mappe rapide
   const courseMap     = Object.fromEntries(courses.map(c => [c.id, c]));
   const roomMap       = Object.fromEntries(rooms.map(r => [r.id, r]));
   const instructorMap = Object.fromEntries(instructors.map(i => [i.id, i]));
   const userMap       = Object.fromEntries(users.map(u => [u.id, u]));
 
-  // Filtra per periodo
-  const corsisti     = users.filter(u => u.role === 'corsista');
-  const slotsP       = slots.filter(s => s.date >= fromStr && s.date < toStr && s.isActive !== false);
-  const bookingsP    = bookings.filter(b => b.status === 'confirmed');
-  const bookingsOnP  = bookingsP.filter(b => slotsP.find(s => s.id === b.slotId));
-  const paymentsP    = payments.filter(p => {
+  const corsisti  = users.filter(u => u.role === 'corsista');
+  const slotsP    = slots.filter(s => s.date >= fromStr && s.date < toStr && s.isActive !== false);
+  const bookingsC = bookings.filter(b => b.status === 'confirmed');
+  const bookingsP = bookingsC.filter(b => slotsP.find(s => s.id === b.slotId));
+  const paymentsP = payments.filter(p => {
     const d = p.date?.toDate ? p.date.toDate() : new Date(p.date||0);
     return d >= from && d < to;
   });
-
   const nuoviP = corsisti.filter(u => {
     const d = u.createdAt?.toDate ? u.createdAt.toDate() : new Date(u.createdAt||0);
     return d >= from && d < to;
   });
 
-  // Incassi
-  const incassi = paymentsP.reduce((acc, p) => acc + (p.amount || 0), 0);
+  const incassi = paymentsP.reduce((a, p) => a + (p.amount||0), 0);
 
-  // Tasso riempimento medio
   let riempTot = 0, riempCount = 0;
   slotsP.forEach(s => {
     const cap  = s.maxCapacity || 1;
-    const bks  = bookingsP.filter(b => b.slotId === s.id).length;
+    const bks  = bookingsC.filter(b => b.slotId === s.id).length;
     riempTot  += (bks / cap) * 100;
     riempCount++;
   });
   const riempMedio = riempCount > 0 ? Math.round(riempTot / riempCount) : 0;
 
-  // ── Aggiorna stat cards ──
+  // Stat cards
   document.getElementById('statIscritti').textContent     = corsisti.length;
   document.getElementById('statLezioni').textContent      = slotsP.length;
-  document.getElementById('statPrenotazioni').textContent = bookingsOnP.length;
+  document.getElementById('statPrenotazioni').textContent = bookingsP.length;
   document.getElementById('statIncassi').textContent      = `€${incassi.toFixed(0)}`;
   document.getElementById('statRiempimento').textContent  = `${riempMedio}%`;
   document.getElementById('statNuovi').textContent        = nuoviP.length;
 
-  // ── Calendario del giorno ──
-  renderTodaySlots(slots, bookingsP, courseMap, instructorMap, userMap);
-
-  // ── Report corsi ──
-  renderReportCorsi(courses, slotsP, bookingsP, paymentsP);
-
-  // ── Report sale ──
-  renderReportSale(rooms, slotsP, bookingsP, paymentsP);
-
-  // ── Feed attività ──
+  renderTodaySlots(slots, bookingsC, courseMap, instructorMap, userMap);
+  renderReportCorsi(courses, slotsP, bookingsC, paymentsP);
+  renderReportSale(rooms, slotsP, bookingsC, paymentsP);
   renderFeed(bookings, users, slots, payments, courseMap);
-
-  // ── Alert ──
-  renderAlerts(corsisti, slots, instructorMap);
+  renderAlerts(corsisti, slots);
 }
 
 // ── Calendario del giorno ────────────────────────────────────
 function renderTodaySlots(slots, bookings, courseMap, instructorMap, userMap) {
-  const today   = toYMD(new Date());
+  const today      = toYMD(new Date());
   const todaySlots = slots.filter(s => s.date === today && s.isActive !== false)
                           .sort((a,b) => a.hour - b.hour);
-  const container = document.getElementById('todaySlots');
+  const container  = document.getElementById('todaySlots');
 
   if (todaySlots.length === 0) {
-    container.innerHTML = `<div class="slot-empty-row">Nessuna lezione programmata per oggi.</div>`;
+    container.innerHTML = `<div style="padding:20px 0;text-align:center;color:var(--text-muted);font-size:.82rem;font-style:italic;">Nessuna lezione programmata per oggi.</div>`;
     return;
   }
 
@@ -258,16 +285,14 @@ function renderTodaySlots(slots, bookings, courseMap, instructorMap, userMap) {
     const cap        = slot.maxCapacity || 5;
     const pct        = Math.round((bks / cap) * 100);
     const isFull     = bks >= cap;
-    const hourLabel  = `${String(slot.hour).padStart(2,'0')}:00`;
-
+    const hour       = `${String(slot.hour).padStart(2,'0')}:00`;
     return `
-      <div class="slot-row" data-slotid="${slot.id}" data-slothour="${hourLabel}"
-           data-coursename="${course?.name||'—'}" data-instructor="${instructor?.name||'—'}"
-           data-bks="${bks}" data-cap="${cap}">
-        <div class="slot-hour">${hourLabel}</div>
+      <div class="slot-row" data-slotid="${slot.id}"
+           data-hour="${hour}" data-course="${course?.name||'—'}">
+        <div class="slot-hour">${hour}</div>
         <div class="slot-info">
-          <div class="slot-course">${course?.name || 'Corso non trovato'}</div>
-          <div class="slot-instructor">${instructor?.name || 'Nessun istruttore'}</div>
+          <div class="slot-course">${course?.name||'Corso non trovato'}</div>
+          <div class="slot-instructor">${instructor?.name||'Nessun istruttore'}</div>
         </div>
         <div class="slot-bar-wrap">
           <div class="slot-bar-bg">
@@ -281,23 +306,19 @@ function renderTodaySlots(slots, bookings, courseMap, instructorMap, userMap) {
       </div>`;
   }).join('');
 
-  // Click → apri pannello
   container.querySelectorAll('.slot-row').forEach(row => {
     row.addEventListener('click', () => {
-      const slotId     = row.dataset.slotid;
-      const slotHour   = row.dataset.slothour;
-      const courseName = row.dataset.coursename;
-      openPanel(slotId, slotHour, courseName, bookings, userMap);
+      openPanel(row.dataset.slotid, row.dataset.hour, row.dataset.course, bookings, userMap);
     });
   });
 }
 
-// ── Pannello laterale ─────────────────────────────────────────
+// ── Pannello laterale ────────────────────────────────────────
 function openPanel(slotId, hour, courseName, bookings, userMap) {
-  const bks = bookings.filter(b => b.slotId === slotId);
+  const bks  = bookings.filter(b => b.slotId === slotId);
   document.getElementById('panelTitle').textContent = `${courseName} — ${hour}`;
-
   const body = document.getElementById('panelBody');
+
   if (bks.length === 0) {
     body.innerHTML = `
       <div class="panel-slot-detail">
@@ -306,27 +327,23 @@ function openPanel(slotId, hour, courseName, bookings, userMap) {
       </div>
       <div class="empty-state"><p>Nessun corsista prenotato.</p></div>`;
   } else {
-    const list = bks.map(b => {
-      const u = userMap[b.userId];
-      if (!u) return '';
-      const av = (u.name?.[0]||'?').toUpperCase();
-      return `
-        <div class="corsista-item">
-          <div class="corsista-avatar">${av}</div>
+    body.innerHTML = `
+      <div class="panel-slot-detail">
+        <p>Corso</p><strong>${courseName}</strong>
+        <p style="margin-top:8px;">Prenotati</p><strong>${bks.length} corsisti</strong>
+      </div>` +
+      bks.map(b => {
+        const u = userMap[b.userId];
+        if (!u) return '';
+        return `<div class="corsista-item">
+          <div class="corsista-avatar">${(u.name?.[0]||'?').toUpperCase()}</div>
           <div>
             <div class="corsista-name">${u.name||''} ${u.surname||''}</div>
             <div class="corsista-email">${u.email||''}</div>
           </div>
         </div>`;
-    }).join('');
-    body.innerHTML = `
-      <div class="panel-slot-detail">
-        <p>Corso</p><strong>${courseName}</strong>
-        <p style="margin-top:8px;">Prenotati</p><strong>${bks.length} corsisti</strong>
-      </div>
-      ${list}`;
+      }).join('');
   }
-
   document.getElementById('sidePanel').classList.add('open');
   document.getElementById('panelOverlay').classList.add('open');
 }
@@ -337,60 +354,44 @@ function closePanel() {
 }
 
 // ── Report corsi ─────────────────────────────────────────────
-function renderReportCorsi(courses, slotsP, bookingsP, paymentsP) {
+function renderReportCorsi(courses, slotsP, bookingsC, paymentsP) {
   const tbody = document.getElementById('reportCorsi');
-  if (courses.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">Nessun corso trovato.</td></tr>`;
+  if (!courses.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">Nessun corso.</td></tr>`;
     return;
   }
-  tbody.innerHTML = courses.map(corso => {
-    const cSlots = slotsP.filter(s => s.courseId === corso.id);
-    const cBks   = bookingsP.filter(b => cSlots.find(s => s.id === b.slotId)).length;
-    const totCap = cSlots.reduce((a,s) => a + (s.maxCapacity||5), 0);
-    const pct    = totCap > 0 ? Math.round((cBks / totCap) * 100) : 0;
-    const incasso= paymentsP.filter(p => cSlots.find(s => s.id === p.slotId))
-                            .reduce((a,p) => a+(p.amount||0), 0);
-    return `<tr>
-      <td><strong>${corso.name}</strong></td>
-      <td>${cSlots.length}</td>
-      <td>${cBks}</td>
-      <td>${pct}%</td>
-      <td>€${incasso.toFixed(0)}</td>
-    </tr>`;
+  tbody.innerHTML = courses.map(c => {
+    const cs   = slotsP.filter(s => s.courseId === c.id);
+    const cb   = bookingsC.filter(b => cs.find(s => s.id === b.slotId)).length;
+    const cap  = cs.reduce((a,s) => a+(s.maxCapacity||5), 0);
+    const pct  = cap > 0 ? Math.round((cb/cap)*100) : 0;
+    const inc  = paymentsP.filter(p => cs.find(s => s.id === p.slotId)).reduce((a,p)=>a+(p.amount||0),0);
+    return `<tr><td><strong>${c.name}</strong></td><td>${cs.length}</td><td>${cb}</td><td>${pct}%</td><td>€${inc.toFixed(0)}</td></tr>`;
   }).join('');
 }
 
 // ── Report sale ──────────────────────────────────────────────
-function renderReportSale(rooms, slotsP, bookingsP, paymentsP) {
+function renderReportSale(rooms, slotsP, bookingsC, paymentsP) {
   const tbody = document.getElementById('reportSale');
-  if (rooms.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;">Nessuna sala trovata.</td></tr>`;
+  if (!rooms.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;">Nessuna sala.</td></tr>`;
     return;
   }
-  tbody.innerHTML = rooms.map(sala => {
-    const rSlots = slotsP.filter(s => s.roomId === sala.id);
-    const totCap = rSlots.reduce((a,s) => a + (s.maxCapacity||sala.capacity||5), 0);
-    const totBks = bookingsP.filter(b => rSlots.find(s => s.id === b.slotId)).length;
-    const pct    = totCap > 0 ? Math.round((totBks / totCap) * 100) : 0;
-    const incasso= paymentsP.filter(p => rSlots.find(s => s.id === p.slotId))
-                            .reduce((a,p) => a+(p.amount||0), 0);
-    return `<tr>
-      <td><strong>${sala.name}</strong></td>
-      <td>${rSlots.length}</td>
-      <td>${pct}%</td>
-      <td>€${incasso.toFixed(0)}</td>
-    </tr>`;
+  tbody.innerHTML = rooms.map(r => {
+    const rs  = slotsP.filter(s => s.roomId === r.id);
+    const cap = rs.reduce((a,s) => a+(s.maxCapacity||r.capacity||5), 0);
+    const bks = bookingsC.filter(b => rs.find(s => s.id === b.slotId)).length;
+    const pct = cap > 0 ? Math.round((bks/cap)*100) : 0;
+    const inc = paymentsP.filter(p => rs.find(s => s.id === p.slotId)).reduce((a,p)=>a+(p.amount||0),0);
+    return `<tr><td><strong>${r.name}</strong></td><td>${rs.length}</td><td>${pct}%</td><td>€${inc.toFixed(0)}</td></tr>`;
   }).join('');
 }
 
 // ── Feed attività ─────────────────────────────────────────────
 function renderFeed(bookings, users, slots, payments, courseMap) {
-  const feed = document.getElementById('feedList');
   const userMap = Object.fromEntries(users.map(u => [u.id, u]));
   const slotMap = Object.fromEntries(slots.map(s => [s.id, s]));
-
-  // Costruisci eventi
-  const events = [];
+  const events  = [];
 
   bookings.forEach(b => {
     const u = userMap[b.userId];
@@ -398,50 +399,34 @@ function renderFeed(bookings, users, slots, payments, courseMap) {
     const c = courseMap[s?.courseId];
     if (!u || !s) return;
     const hour = `${String(s.hour).padStart(2,'0')}:00`;
-    if (b.status === 'confirmed' && b.createdAt) {
-      events.push({
-        text: `${u.name||''} ${u.surname||''} ha prenotato ${c?.name||'lezione'} ${hour}`,
-        time: b.createdAt, type: 'book'
-      });
-    }
-    if (b.status === 'cancelled' && b.cancelledAt) {
-      events.push({
-        text: `${u.name||''} ${u.surname||''} ha disdetto ${c?.name||'lezione'} ${hour}`,
-        time: b.cancelledAt, type: 'cancel'
-      });
-    }
+    if (b.status === 'confirmed' && b.createdAt)
+      events.push({ text:`${u.name||''} ${u.surname||''} ha prenotato ${c?.name||'lezione'} ${hour}`, time:b.createdAt, type:'book' });
+    if (b.status === 'cancelled' && b.cancelledAt)
+      events.push({ text:`${u.name||''} ${u.surname||''} ha disdetto ${c?.name||'lezione'} ${hour}`, time:b.cancelledAt, type:'cancel' });
   });
 
-  users.filter(u => u.role==='corsista' && u.createdAt).forEach(u => {
-    events.push({
-      text: `Nuovo socio aggiunto: ${u.name||''} ${u.surname||''}`,
-      time: u.createdAt, type: 'new'
-    });
-  });
+  users.filter(u => u.role==='corsista' && u.createdAt).forEach(u =>
+    events.push({ text:`Nuovo socio: ${u.name||''} ${u.surname||''}`, time:u.createdAt, type:'new' })
+  );
 
   payments.forEach(p => {
     const u = userMap[p.userId];
     if (!u || !p.date) return;
-    events.push({
-      text: `Pagamento registrato: ${u.name||''} ${u.surname||''} €${p.amount||0}`,
-      time: p.date, type: 'pay'
-    });
+    events.push({ text:`Pagamento: ${u.name||''} ${u.surname||''} €${p.amount||0}`, time:p.date, type:'pay' });
   });
 
-  // Ordina per data decrescente
   events.sort((a,b) => {
     const ta = a.time?.toDate ? a.time.toDate() : new Date(a.time||0);
     const tb = b.time?.toDate ? b.time.toDate() : new Date(b.time||0);
     return tb - ta;
   });
 
-  const top10 = events.slice(0, 10);
-  if (top10.length === 0) {
+  const feed = document.getElementById('feedList');
+  if (!events.length) {
     feed.innerHTML = `<div class="empty-state"><p>Nessuna attività recente.</p></div>`;
     return;
   }
-
-  feed.innerHTML = top10.map(ev => `
+  feed.innerHTML = events.slice(0,10).map(ev => `
     <div class="feed-item">
       <div class="feed-dot ${ev.type==='cancel'?'cancel':ev.type==='new'?'new':ev.type==='pay'?'pay':''}"></div>
       <div>
@@ -452,65 +437,37 @@ function renderFeed(bookings, users, slots, payments, courseMap) {
 }
 
 // ── Alert ────────────────────────────────────────────────────
-function renderAlerts(corsisti, slots, instructorMap) {
-  const alertList = document.getElementById('alertList');
-  const alerts    = [];
+function renderAlerts(corsisti, slots) {
   const today     = new Date();
-  const in7days   = new Date(today.getTime() + 7 * 86400000);
-  const todayStr  = toYMD(today);
-  const tomorrowStr = toYMD(new Date(today.getTime() + 86400000));
+  const in7       = new Date(today.getTime() + 7*86400000);
+  const tomorrow  = toYMD(new Date(today.getTime() + 86400000));
+  const alerts    = [];
 
-  // Abbonamenti in scadenza entro 7 giorni
-  const scaduti = corsisti.filter(u => {
-    if (u.paymentType !== 'subscription' || !u.subscriptionExpiry) return false;
-    const exp = u.subscriptionExpiry?.toDate ? u.subscriptionExpiry.toDate()
-                : new Date(u.subscriptionExpiry);
-    return exp >= today && exp <= in7days;
+  corsisti.filter(u => u.paymentType==='subscription' && u.subscriptionExpiry).forEach(u => {
+    const exp = u.subscriptionExpiry?.toDate ? u.subscriptionExpiry.toDate() : new Date(u.subscriptionExpiry);
+    if (exp >= today && exp <= in7)
+      alerts.push({ type:'warning', text:`Abbonamento in scadenza`, sub:`${u.name||''} ${u.surname||''} — scade il ${exp.toLocaleDateString('it-IT')}` });
   });
 
-  if (scaduti.length > 0) {
-    scaduti.forEach(u => {
-      const exp = u.subscriptionExpiry?.toDate ? u.subscriptionExpiry.toDate()
-                  : new Date(u.subscriptionExpiry);
-      alerts.push({
-        type: 'warning',
-        text: `Abbonamento in scadenza`,
-        sub:  `${u.name||''} ${u.surname||''} — scade il ${exp.toLocaleDateString('it-IT')}`
-      });
-    });
-  }
+  const senzaIstr = slots.filter(s => s.date === tomorrow && (!s.instructorId || s.instructorId === ''));
+  if (senzaIstr.length)
+    alerts.push({ type:'info', text:`${senzaIstr.length} lezione/i di domani senza istruttore`, sub:'Vai al calendario per assegnare un istruttore' });
 
-  // Lezioni di domani senza istruttore
-  const domaniSenzaIstr = slots.filter(s =>
-    s.date === tomorrowStr && (!s.instructorId || s.instructorId === '')
-  );
-  if (domaniSenzaIstr.length > 0) {
-    alerts.push({
-      type: 'info',
-      text: `${domaniSenzaIstr.length} lezione/i di domani senza istruttore`,
-      sub:  'Vai al calendario per assegnare un istruttore'
-    });
-  }
-
-  if (alerts.length === 0) {
+  const alertList = document.getElementById('alertList');
+  if (!alerts.length) {
     alertList.innerHTML = `<div class="alert-item alert-info">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      <div><div class="alert-text">Tutto in ordine!</div>
-      <div class="alert-sub">Nessun avviso da segnalare.</div></div>
+      <div><div class="alert-text">Tutto in ordine!</div><div class="alert-sub">Nessun avviso da segnalare.</div></div>
     </div>`;
     return;
   }
-
   alertList.innerHTML = alerts.map(a => `
     <div class="alert-item alert-${a.type}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         ${a.type==='warning'
-          ? '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
-          : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
+          ?'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+          :'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
-      <div>
-        <div class="alert-text">${a.text}</div>
-        <div class="alert-sub">${a.sub}</div>
-      </div>
+      <div><div class="alert-text">${a.text}</div><div class="alert-sub">${a.sub}</div></div>
     </div>`).join('');
 }
