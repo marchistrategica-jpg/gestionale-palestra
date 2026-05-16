@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seed — Gestionale Palestra</title>
+  <style>
+    body { font-family: monospace; background: #0f507b; color: #fff;
+           padding: 30px; max-width: 680px; margin: 0 auto; }
+    h1   { font-size: 1.2rem; margin-bottom: 6px; }
+    p    { font-size: .85rem; opacity: .75; margin-bottom: 24px; }
+    #log { background: #0a3a5a; border-radius: 8px; padding: 18px;
+           font-size: .8rem; line-height: 1.8; max-height: 420px;
+           overflow-y: auto; white-space: pre-wrap; }
+    .ok  { color: #5dffc0; }
+    .err { color: #ff5e8a; }
+    .info{ color: #7ecfff; }
+    button { margin-top: 20px; padding: 11px 28px; background: #e6165c;
+             color: #fff; border: none; border-radius: 6px; font-size: .9rem;
+             font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<h1>🌱 Seed — Gestionale Palestra</h1>
+<p>Clicca il pulsante per popolare Firebase con i dati iniziali.<br>
+   Eseguilo <strong>una sola volta</strong>. Poi chiudi questa pagina.</p>
+
+<div id="log">In attesa…</div>
+<button id="btnSeed">Avvia Seed</button>
+
+<!-- ⚠️  Incolla qui sotto le stesse credenziali di js/firebase.js -->
+<script type="module">
+import { initializeApp }         from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc,
+         setDoc, addDoc, serverTimestamp }
+                                  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// 🔑  INCOLLA QUI LE TUE CREDENZIALI FIREBASE
+const firebaseConfig = {
+  apiKey:            "AIzaSyCIYt0tgl0MQbG3KAkpqTg_ZZMykT0w8lw",
+  authDomain:        "gestionale-palestra-44dba.firebaseapp.com",
+  projectId:         "gestionale-palestra-44dba",
+  storageBucket:     "gestionale-palestra-44dba.firebasestorage.app",
+  messagingSenderId: "127344006319",
+  appId:             "1:127344006319:web:a478ba76a586e8c1b7705a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const logEl = document.getElementById('log');
+function log(msg, cls = '') {
+  const line = document.createElement('span');
+  line.className = cls;
+  line.textContent = msg + '\n';
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function seed() {
+  document.getElementById('btnSeed').disabled = true;
+  logEl.textContent = '';
+  log('Avvio seed…', 'info');
+
+  try {
+    // ── SETTINGS ────────────────────────────────────────────
+    log('\n📋  Settings…', 'info');
+    await setDoc(doc(db, 'settings', 'main'), {
+      lessonPrice : 20,
+      gymName     : 'Gestionale Palestra',
+      startHour   : 6,
+      endHour     : 21,
+      openDays    : [1, 2, 3, 4, 5, 6]   // lun → sab
+    });
+    log('  ✓ settings/main', 'ok');
+
+    // ── ROOMS ───────────────────────────────────────────────
+    log('\n🏠  Sale…', 'info');
+    await setDoc(doc(db, 'rooms', 'sala1'), {
+      name      : 'Sala 1',
+      capacity  : 5,
+      isActive  : true,
+      color     : '#0f507b',
+      createdAt : serverTimestamp()
+    });
+    log('  ✓ Sala 1', 'ok');
+
+    // ── COURSES ─────────────────────────────────────────────
+    log('\n🎽  Corsi…', 'info');
+    const pilatesRef = await addDoc(collection(db, 'courses'), {
+      name             : 'Pilates',
+      color            : '#e6165c',
+      compatibleRooms  : ['sala1'],
+      createdAt        : serverTimestamp()
+    });
+    log(`  ✓ Pilates (${pilatesRef.id})`, 'ok');
+
+    const corpoRef = await addDoc(collection(db, 'courses'), {
+      name             : 'Corpo Libero',
+      color            : '#0f507b',
+      compatibleRooms  : ['sala1'],
+      createdAt        : serverTimestamp()
+    });
+    log(`  ✓ Corpo Libero (${corpoRef.id})`, 'ok');
+
+    // ── INSTRUCTORS ──────────────────────────────────────────
+    log('\n👤  Istruttori…', 'info');
+    const instrRef = await addDoc(collection(db, 'instructors'), {
+      name             : 'Da Configurare',
+      email            : 'admin@palestra.it',
+      phone            : '',
+      teachableCourses : [pilatesRef.id, corpoRef.id],
+      availability     : {
+        monday   : [{ from: '06:00', to: '21:00' }],
+        tuesday  : [{ from: '06:00', to: '21:00' }],
+        wednesday: [{ from: '06:00', to: '21:00' }],
+        thursday : [{ from: '06:00', to: '21:00' }],
+        friday   : [{ from: '06:00', to: '21:00' }],
+        saturday : [{ from: '06:00', to: '21:00' }]
+      },
+      createdAt        : serverTimestamp()
+    });
+    log(`  ✓ Istruttore (${instrRef.id})`, 'ok');
+
+    // ── TEMPLATES ───────────────────────────────────────────
+    log('\n✉️   Template messaggi…', 'info');
+
+    await addDoc(collection(db, 'templates'), {
+      name     : 'Promemoria Lezione',
+      type     : 'whatsapp',
+      body     : 'Ciao {nome}! Ti ricordiamo la lezione di {corso} domani alle {ora}. A presto! 💪',
+      createdAt: serverTimestamp()
+    });
+    log('  ✓ WhatsApp — Promemoria Lezione', 'ok');
+
+    await addDoc(collection(db, 'templates'), {
+      name     : 'Lezione Cancellata',
+      type     : 'whatsapp',
+      body     : 'Ciao {nome}, la lezione di {corso} delle {ora} di {giorno} è stata cancellata. Ci scusiamo!',
+      createdAt: serverTimestamp()
+    });
+    log('  ✓ WhatsApp — Lezione Cancellata', 'ok');
+
+    await addDoc(collection(db, 'templates'), {
+      name     : 'Benvenuto',
+      type     : 'email',
+      subject  : 'Benvenuto in palestra!',
+      body     : 'Ciao {nome}, il tuo account è attivo.\nPuoi prenotare le lezioni dal portale.',
+      createdAt: serverTimestamp()
+    });
+    log('  ✓ Email — Benvenuto', 'ok');
+
+    await addDoc(collection(db, 'templates'), {
+      name     : 'Scadenza Abbonamento',
+      type     : 'email',
+      subject  : 'Il tuo abbonamento sta per scadere',
+      body     : 'Ciao {nome}, il tuo abbonamento scade il {scadenza}.\nContattaci per rinnovarlo!',
+      createdAt: serverTimestamp()
+    });
+    log('  ✓ Email — Scadenza Abbonamento', 'ok');
+
+    // ── ADMIN USER in Firestore ──────────────────────────────
+    log('\n🔐  Utente Admin in Firestore…', 'info');
+    await setDoc(doc(db, 'users', 'kbX6te8WyvMylGlWSa1SYy4F8Q42'), {
+      role      : 'admin',
+      name      : 'Admin',
+      surname   : 'Palestra',
+      email     : 'clanfester@gmail.com',
+      createdAt : serverTimestamp()
+    });
+    log('  ✓ Admin creato in Firestore', 'ok');
+
+    log('\n\n✅  SEED COMPLETATO con successo!', 'ok');
+    log('Il gestionale è pronto. Puoi chiudere questa pagina.', 'info');
+
+  } catch (err) {
+    log('\n❌  ERRORE: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    document.getElementById('btnSeed').disabled = false;
+  }
+}
+
+document.getElementById('btnSeed').addEventListener('click', seed);
+</script>
+</body>
+</html>
