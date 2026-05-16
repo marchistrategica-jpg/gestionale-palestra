@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Gestionale Palestra</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Selettore periodo ── */
+    .period-selector {
+      display: flex;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      width: fit-content;
+      margin-bottom: 24px;
+    }
+    .period-btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all .18s;
+      letter-spacing: .02em;
+    }
+    .period-btn.active {
+      background: var(--magenta);
+      color: #fff;
+    }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: var(--stat-color, var(--blu));
+    }
+    .stat-label {
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-sub {
+      font-size: .72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* ── Dashboard grid layout ── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .dash-full { grid-column: 1 / -1; }
+
+    /* ── Calendario del giorno ── */
+    .slot-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+      border-radius: 6px;
+      padding: 10px 8px;
+    }
+    .slot-row:hover { background: var(--bg); }
+    .slot-row:last-child { border-bottom: none; }
+    .slot-hour {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      min-width: 42px;
+    }
+    .slot-info { flex: 1; }
+    .slot-course {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .slot-instructor {
+      font-size: .72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .slot-bar-wrap {
+      width: 80px;
+    }
+    .slot-bar-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .slot-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--blu);
+      transition: width .3s;
+    }
+    .slot-bar-fill.full { background: var(--magenta); }
+    .slot-count {
+      font-size: .68rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      text-align: right;
+    }
+    .slot-empty-row {
+      padding: 8px;
+      color: var(--text-muted);
+      font-size: .78rem;
+      font-style: italic;
+    }
+
+    /* ── Pannello laterale corsisti ── */
+    .side-panel {
+      position: fixed;
+      top: 0; right: -380px;
+      width: 360px;
+      height: 100vh;
+      background: #fff;
+      box-shadow: -4px 0 24px rgba(0,0,0,.12);
+      z-index: 300;
+      transition: right .25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .side-panel.open { right: 0; }
+    .side-panel-header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .side-panel-title {
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .side-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 22px;
+    }
+    .panel-slot-detail {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: .8rem;
+    }
+    .panel-slot-detail p { margin-bottom: 4px; color: var(--text-muted); }
+    .panel-slot-detail strong { color: var(--text); }
+    .panel-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.3);
+      z-index: 299;
+      display: none;
+    }
+    .panel-overlay.open { display: block; }
+    .corsista-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .corsista-item:last-child { border-bottom: none; }
+    .corsista-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--blu-light);
+      color: var(--blu);
+      font-size: .75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .corsista-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .corsista-email { font-size: .72rem; color: var(--text-muted); }
+
+    /* ── Feed attività ── */
+    .feed-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .8rem;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--blu);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .feed-dot.cancel { background: var(--magenta); }
+    .feed-dot.new    { background: #1a8a45; }
+    .feed-dot.pay    { background: var(--slot-closed); }
+    .feed-text { color: var(--text); line-height: 1.4; }
+    .feed-time { color: var(--text-muted); font-size: .7rem; margin-top: 2px; }
+
+    /* ── Alert ── */
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: .8rem;
+    }
+    .alert-item:last-child { margin-bottom: 0; }
+    .alert-warning { background: #fff5e6; border: 1px solid #f5d89a; }
+    .alert-info    { background: var(--blu-light); border: 1px solid #b3d4ea; }
+    .alert-item svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+    .alert-warning svg { color: var(--slot-closed); }
+    .alert-info svg    { color: var(--blu); }
+    .alert-text { color: var(--text); font-weight: 600; }
+    .alert-sub  { color: var(--text-muted); font-size: .72rem; margin-top: 2px; }
+
+    /* ── Quick actions ── */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .quick-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 12px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all .18s;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .quick-btn:hover {
+      border-color: var(--blu);
+      background: var(--blu-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .quick-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      background: var(--blu-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blu);
+    }
+    .quick-icon svg { width: 20px; height: 20px; }
+    .quick-label {
+      font-size: .75rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text);
+    }
+
+    /* ── Tabelle report ── */
+    .report-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .report-table th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: .67rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .report-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .report-table tr:last-child td { border-bottom: none; }
+    .report-table tr:hover td { background: var(--bg); }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .dash-grid  { grid-template-columns: 1fr; }
+      .quick-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body class="hidden">
+
+<div class="app-layout">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <span id="todayDate" style="font-size:.8rem;color:var(--text-muted);font-weight:600;"></span>
+      </div>
+    </div>
+
+    <!-- Page content -->
+    <div class="page-content">
+
+      <!-- Selettore periodo -->
+      <div class="period-selector">
+        <button class="period-btn active" data-period="today">Oggi</button>
+        <button class="period-btn" data-period="week">Settimana</button>
+        <button class="period-btn" data-period="month">Mese</button>
+        <button class="period-btn" data-period="year">Anno</button>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--stat-color:#0f507b">
+          <div class="stat-label">Iscritti totali</div>
+          <div class="stat-value" id="statIscritti">—</div>
+          <div class="stat-sub">corsisti registrati</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#e6165c">
+          <div class="stat-label">Lezioni erogate</div>
+          <div class="stat-value" id="statLezioni">—</div>
+          <div class="stat-sub" id="statLezioniSub">nel periodo</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#1a8a45">
+          <div class="stat-label">Prenotazioni</div>
+          <div class="stat-value" id="statPrenotazioni">—</div>
+          <div class="stat-sub">nel periodo</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#c9821a">
+          <div class="stat-label">Incassi</div>
+          <div class="stat-value" id="statIncassi">—</div>
+          <div class="stat-sub">nel periodo (€)</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#6b3fa0">
+          <div class="stat-label">Tasso riempimento</div>
+          <div class="stat-value" id="statRiempimento">—</div>
+          <div class="stat-sub">media nel periodo</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#0f507b">
+          <div class="stat-label">Nuovi iscritti</div>
+          <div class="stat-value" id="statNuovi">—</div>
+          <div class="stat-sub">nel periodo</div>
+        </div>
+      </div>
+
+      <!-- Riga: Calendario giorno + Feed attività -->
+      <div class="dash-grid">
+
+        <!-- Calendario del giorno -->
+        <div class="card">
+          <div class="section-header">
+            <div class="card-title">📅 Lezioni di oggi</div>
+          </div>
+          <div id="todaySlots">
+            <div class="text-muted" style="padding:20px 0;text-align:center;">Caricamento…</div>
+          </div>
+        </div>
+
+        <!-- Feed attività -->
+        <div class="card">
+          <div class="card-title">🕐 Attività recente</div>
+          <div id="feedList">
+            <div class="text-muted" style="padding:20px 0;text-align:center;">Caricamento…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Alert -->
+      <div class="card mb-4 dash-full" style="margin-bottom:16px;">
+        <div class="card-title">⚠️ Avvisi</div>
+        <div id="alertList">
+          <div class="text-muted" style="padding:8px 0;">Caricamento…</div>
+        </div>
+      </div>
+
+      <!-- Report per corso + per sala -->
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-title">📊 Report per corso</div>
+          <div style="overflow-x:auto;">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Corso</th>
+                  <th>Lezioni</th>
+                  <th>Prenotazioni</th>
+                  <th>Riempimento</th>
+                  <th>Incasso €</th>
+                </tr>
+              </thead>
+              <tbody id="reportCorsi">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">Caricamento…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏠 Report per sala</div>
+          <div style="overflow-x:auto;">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Sala</th>
+                  <th>Lezioni</th>
+                  <th>Utilizzo</th>
+                  <th>Incasso €</th>
+                </tr>
+              </thead>
+              <tbody id="reportSale">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;">Caricamento…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accessi rapidi -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">⚡ Accessi rapidi</div>
+        <div class="quick-grid" style="margin-top:14px;">
+          <a href="anagrafica.html" class="quick-btn">
+            <div class="quick-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+            <span class="quick-label">Aggiungi Socio</span>
+          </a>
+          <a href="calendario-admin.html" class="quick-btn">
+            <div class="quick-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>
+              </svg>
+            </div>
+            <span class="quick-label">Programma Lezione</span>
+          </a>
+          <a href="messaggi.html" class="quick-btn">
+            <div class="quick-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <span class="quick-label">Invia Messaggio</span>
+          </a>
+          <a href="impostazioni.html" class="quick-btn">
+            <div class="quick-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </div>
+            <span class="quick-label">Impostazioni</span>
+          </a>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- Pannello laterale corsisti -->
+<div class="panel-overlay" id="panelOverlay"></div>
+<div class="side-panel" id="sidePanel">
+  <div class="side-panel-header">
+    <div class="side-panel-title" id="panelTitle">Corsisti prenotati</div>
+    <button class="btn-logout" id="btnClosePanel" style="color:var(--text-muted);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="side-panel-body" id="panelBody"></div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
