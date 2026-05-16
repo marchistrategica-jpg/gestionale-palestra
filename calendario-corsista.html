@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Le mie lezioni — Gestionale Palestra</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: var(--bg); }
+
+    /* ── Topbar corsista ── */
+    .corsista-topbar {
+      background: var(--blu); height: 58px;
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 14px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .corsista-topbar img { width: 32px; height: 32px; object-fit: contain; }
+    .corsista-topbar-title { font-size: .85rem; font-weight: 800; color: #fff; flex: 1; }
+    .corsista-name { font-size: .78rem; color: rgba(255,255,255,.75); font-weight: 600; }
+    .btn-logout-corsista {
+      color: rgba(255,255,255,.65); padding: 6px; border-radius: 5px;
+      cursor: pointer; border: none; background: none; transition: color .18s;
+    }
+    .btn-logout-corsista:hover { color: #fff; }
+
+    /* ── Tab ── */
+    .tabs-wrap { background: #fff; border-bottom: 1px solid var(--border); padding: 0 24px; }
+    .tabs { display: flex; }
+    .tab-btn {
+      padding: 13px 20px; font-size: .82rem; font-weight: 700;
+      color: var(--text-muted); border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .18s; margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--blu); border-bottom-color: var(--blu); }
+    .tab-content { display: none; padding: 20px 24px; }
+    .tab-content.active { display: block; }
+
+    /* ── Griglia corsista ── */
+    .cal-wrap { overflow-x: auto; }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: 48px repeat(6, 1fr);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; background: #fff; min-width: 640px;
+    }
+    .cal-head-empty { background: var(--bg); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+    .cal-head-day {
+      padding: 9px 5px; text-align: center;
+      background: var(--bg); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+      font-size: .7rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .cal-head-day.today { background: var(--blu-light); color: var(--blu); }
+    .cal-head-day .day-num { display: block; font-size: 1rem; font-weight: 800; color: var(--text); margin-top: 2px; }
+    .cal-head-day.today .day-num { color: var(--blu); }
+    .cal-time {
+      padding: 4px 5px 0; font-size: .65rem; font-weight: 700;
+      color: var(--text-muted); background: var(--bg);
+      border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      min-height: 58px; text-align: right;
+    }
+    .cal-cell {
+      border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      min-height: 58px; padding: 3px;
+    }
+    .cal-cell.today-col { background: #fafcff; }
+
+    /* ── Slot corsista ── */
+    .corsista-slot {
+      border-radius: 5px; padding: 4px 6px; font-size: .68rem;
+      cursor: pointer; transition: filter .15s;
+    }
+    .corsista-slot:hover { filter: brightness(.92); }
+    .corsista-slot.disponibile  { background: var(--blu); color: #fff; }
+    .corsista-slot.completo     { background: var(--magenta); color: #fff; opacity: .8; cursor: default; }
+    .corsista-slot.prenotato    { background: #1a8a45; color: #fff; }
+    .corsista-slot.chiuso {
+      background: repeating-linear-gradient(45deg,#f5e6c8,#f5e6c8 3px,#fdf3e1 3px,#fdf3e1 8px);
+      color: var(--slot-closed); border: 1px solid #f5d89a; cursor: default;
+    }
+    .slot-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-info { opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Toolbar corsista ── */
+    .corsista-toolbar {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .cal-nav { display: flex; align-items: center; gap: 6px; }
+    .cal-nav-btn {
+      width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; border: 1.5px solid var(--border); background: #fff;
+      color: var(--text-muted); cursor: pointer; transition: all .18s;
+    }
+    .cal-nav-btn:hover { border-color: var(--blu); color: var(--blu); }
+    .cal-period { font-size: .82rem; font-weight: 800; min-width: 170px; text-align: center; }
+    .filter-select {
+      padding: 7px 26px 7px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+      font-family: 'Montserrat', sans-serif; font-size: .78rem; color: var(--text); background: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 7px center;
+      appearance: none; outline: none; cursor: pointer;
+    }
+
+    /* ── Lista prenotazioni ── */
+    .prenotazione-card {
+      background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 18px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .pren-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: var(--blu-light); color: var(--blu);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .pren-icon svg { width: 20px; height: 20px; }
+    .pren-info { flex: 1; }
+    .pren-corso { font-weight: 800; font-size: .88rem; color: var(--text); }
+    .pren-details { font-size: .76rem; color: var(--text-muted); margin-top: 3px; }
+    .section-label {
+      font-size: .7rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Modal popup ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15,40,70,.45);
+      backdrop-filter: blur(3px); z-index: 400;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      width: 100%; max-width: 420px;
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn{from{opacity:0;transform:translateY(-10px) scale(.98)}to{opacity:1;transform:none}}
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+    .modal-title  { font-size: .95rem; font-weight: 800; color: var(--text); }
+    .modal-body   { padding: 18px 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); }
+    .modal-close  { color: var(--text-muted); padding: 4px; border-radius: 5px; cursor: pointer; background: none; border: none; }
+    .modal-close:hover { color: var(--magenta); }
+    .popup-info-row { display: flex; justify-content: space-between; font-size: .82rem; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .popup-info-row:last-child { border-bottom: none; }
+    .popup-label { color: var(--text-muted); font-weight: 600; }
+    .popup-val   { color: var(--text); font-weight: 700; }
+
+    /* ── Toast ── */
+    #toast-container { position:fixed; bottom:24px; right:24px; z-index:500; display:flex; flex-direction:column; gap:10px; }
+    .toast { display:flex; align-items:center; gap:10px; padding:12px 18px; border-radius:6px; color:#fff; font-size:.82rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.15); min-width:220px; animation:toastIn .2s ease; }
+    @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1}}
+    .toast.success{background:#1a8a45}.toast.error{background:var(--magenta)}.toast.info{background:var(--blu)}
+  </style>
+</head>
+<body class="hidden">
+
+<!-- Topbar -->
+<div class="corsista-topbar">
+  <img src="pittogramma%20Strategica.png" alt="Logo" />
+  <div class="corsista-topbar-title">Gestionale Palestra</div>
+  <div class="corsista-name" id="corsistaNome"></div>
+  <button class="btn-logout-corsista" id="btnLogout" title="Esci">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Tab -->
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="prenota">Prenota lezione</button>
+    <button class="tab-btn" data-tab="mie">Le mie prenotazioni</button>
+  </div>
+</div>
+
+<!-- Tab 1: Prenota -->
+<div class="tab-content active" id="tab-prenota">
+  <div class="corsista-toolbar">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="btnPrevWeek">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="cal-period" id="calPeriod"></div>
+      <button class="cal-nav-btn" id="btnNextWeek">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <button class="btn btn-ghost" id="btnToday" style="padding:6px 12px;font-size:.76rem;">Oggi</button>
+    <select class="filter-select" id="filterCorso"><option value="">Tutti i corsi</option></select>
+    <select class="filter-select" id="filterSala"><option value="">Tutte le sale</option></select>
+  </div>
+  <div class="cal-wrap">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<!-- Tab 2: Le mie prenotazioni -->
+<div class="tab-content" id="tab-mie">
+  <div id="listaMiePrenotazioni">
+    <div style="text-align:center;padding:30px;color:var(--text-muted);">Caricamento…</div>
+  </div>
+</div>
+
+<!-- Modal popup prenotazione -->
+<div class="modal-backdrop" id="modalSlot">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalSlotTitle">Dettaglio lezione</div>
+      <button class="modal-close" data-close="modalSlot">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalSlotBody"></div>
+    <div class="modal-footer" id="modalSlotFooter"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script type="module" src="js/calendario-corsista.js"></script>
+</body>
+</html>
