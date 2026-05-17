@@ -329,6 +329,27 @@ function initUI() {
 
   aggiornaCounterDestinatari();
   aggiornaAnteprima();
+
+  // Controlla se arriva da anagrafica con un socio pre-selezionato
+  var params  = new URLSearchParams(window.location.search);
+  var socioId = params.get('socioId');
+  if (socioId) {
+    var socio = allSoci.find(function(s){return s.id===socioId;});
+    if (socio) {
+      // Imposta selezione manuale e seleziona solo questo socio
+      document.querySelector('input[name="destinatari"][value="manuale"]').checked = true;
+      document.getElementById('lblManuale').classList.add('selected');
+      document.getElementById('lblTutti').classList.remove('selected');
+      document.getElementById('lblScadenza').classList.remove('selected');
+      document.getElementById('selezioneManuale').style.display = 'block';
+      // Aspetta che la lista sia renderizzata poi spunta il checkbox
+      setTimeout(function() {
+        var cb = document.querySelector('#sociCheckList input[data-id="' + socioId + '"]');
+        if (cb) { cb.checked = true; aggiornaCounterDestinatari(); }
+      }, 100);
+      showToast('Socio pre-selezionato: ' + (socio.name||'') + ' ' + (socio.surname||''), 'info');
+    }
+  }
 }
 
 // ── Step navigation ───────────────────────────────────────────
