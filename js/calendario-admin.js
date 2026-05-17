@@ -8,8 +8,7 @@ import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  addDoc, updateDoc, deleteDoc, query, where,
-  serverTimestamp
+  addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -25,7 +24,6 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-// ── Stato globale ─────────────────────────────────────────────
 var currentWeekStart = getMonday(new Date());
 var allSlots         = [];
 var allBookings      = [];
@@ -36,13 +34,13 @@ var allUsers         = [];
 var editingSlotId    = null;
 var panelSlotId      = null;
 
-var DAYS   = ['Lun','Mar','Mer','Gio','Ven','Sab'];
-var HOURS  = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+var DAYS  = ['Lun','Mar','Mer','Gio','Ven','Sab'];
+var HOURS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
 // ── Auth ──────────────────────────────────────────────────────
 onAuthStateChanged(auth, async function(user) {
   if (!user) { window.location.href = 'index.html'; return; }
-  var snap = await getDoc(doc(db, 'users', user.uid));
+  var snap = await getDoc(doc(db,'users',user.uid));
   if (!snap.exists() || snap.data().role !== 'admin') {
     window.location.href = 'index.html'; return;
   }
@@ -99,36 +97,26 @@ function initSidebar(userData) {
 
 // ── Helpers ───────────────────────────────────────────────────
 function getMonday(d) {
-  var dt = new Date(d);
-  var day = dt.getDay() || 7;
-  dt.setDate(dt.getDate() - day + 1);
-  dt.setHours(0,0,0,0);
-  return dt;
+  var dt = new Date(d); var day = dt.getDay()||7;
+  dt.setDate(dt.getDate()-day+1); dt.setHours(0,0,0,0); return dt;
 }
-
-function toYMD(d) {
-  return d.toISOString().split('T')[0];
+function toYMD(d)     { return d.toISOString().split('T')[0]; }
+function addDays(d,n) { var dt=new Date(d); dt.setDate(dt.getDate()+n); return dt; }
+function formatDateShort(d) {
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
 }
-
-function addDays(d, n) {
-  var dt = new Date(d);
-  dt.setDate(dt.getDate() + n);
-  return dt;
-}
-
-function formatDateIt(d) {
-  return d.toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric'});
+function formatDateLong(d) {
+  return d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 
 function showToast(msg, type) {
-  type = type || 'success';
+  type = type||'success';
   var el = document.createElement('div');
   el.className = 'toast ' + type;
   el.innerHTML = '<span>' + msg + '</span>';
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(function() { el.remove(); }, 3500);
+  setTimeout(function(){el.remove();},3500);
 }
-
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -152,68 +140,53 @@ async function loadData() {
 
 // ── Init UI ───────────────────────────────────────────────────
 function initUI() {
-  // Popola filtri
-  var selSala = document.getElementById('filterSala');
+  // Filtri
   allRooms.forEach(function(r) {
-    var opt = document.createElement('option');
-    opt.value = r.id; opt.textContent = r.name;
-    selSala.appendChild(opt);
+    var o=document.createElement('option'); o.value=r.id; o.textContent=r.name;
+    document.getElementById('filterSala').appendChild(o);
   });
-  var selCorso = document.getElementById('filterCorso');
   allCourses.forEach(function(c) {
-    var opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = c.name;
-    selCorso.appendChild(opt);
+    var o=document.createElement('option'); o.value=c.id; o.textContent=c.name;
+    document.getElementById('filterCorso').appendChild(o);
   });
-  var selIstr = document.getElementById('filterIstruttore');
   allInstructors.forEach(function(i) {
-    var opt = document.createElement('option');
-    opt.value = i.id; opt.textContent = i.name;
-    selIstr.appendChild(opt);
+    var o=document.createElement('option'); o.value=i.id; o.textContent=i.name;
+    document.getElementById('filterIstruttore').appendChild(o);
   });
-
-  // Filtri → ridisegna
   ['filterSala','filterCorso','filterIstruttore'].forEach(function(id) {
     document.getElementById(id).addEventListener('change', renderCalendar);
   });
 
-  // Navigazione settimana
+  // Navigazione
   document.getElementById('btnPrevWeek').addEventListener('click', function() {
-    currentWeekStart = addDays(currentWeekStart, -7);
-    renderCalendar();
+    currentWeekStart=addDays(currentWeekStart,-7); renderCalendar();
   });
   document.getElementById('btnNextWeek').addEventListener('click', function() {
-    currentWeekStart = addDays(currentWeekStart, 7);
-    renderCalendar();
+    currentWeekStart=addDays(currentWeekStart,7); renderCalendar();
   });
   document.getElementById('btnToday').addEventListener('click', function() {
-    currentWeekStart = getMonday(new Date());
-    renderCalendar();
+    currentWeekStart=getMonday(new Date()); renderCalendar();
   });
 
-  // Pulsante nuova lezione
+  // Nuova lezione
   document.getElementById('btnNuovaLezione').addEventListener('click', function() {
-    openModalLezione(null, null, null);
+    openModalLezione(null,null,null);
   });
 
-  // Popola ore nel modal
-  var selOra = document.getElementById('lezOra');
+  // Ore nel modal
   HOURS.forEach(function(h) {
-    var opt = document.createElement('option');
-    opt.value = h;
-    opt.textContent = String(h).padStart(2,'0') + ':00';
-    selOra.appendChild(opt);
+    var o=document.createElement('option'); o.value=h;
+    o.textContent=String(h).padStart(2,'0')+':00';
+    document.getElementById('lezOra').appendChild(o);
   });
 
-  // Popola sale nel modal
-  var selSalaM = document.getElementById('lezSala');
+  // Sale nel modal
   allRooms.filter(function(r){return r.isActive!==false;}).forEach(function(r) {
-    var opt = document.createElement('option');
-    opt.value = r.id; opt.textContent = r.name + ' (max ' + r.capacity + ')';
-    selSalaM.appendChild(opt);
+    var o=document.createElement('option'); o.value=r.id;
+    o.textContent=r.name+' (max '+r.capacity+')';
+    document.getElementById('lezSala').appendChild(o);
   });
 
-  // Al cambio sala → aggiorna corsi; al cambio corso → aggiorna istruttori
   document.getElementById('lezSala').addEventListener('change', onSalaChange);
   document.getElementById('lezCorso').addEventListener('change', onCorsoChange);
   onSalaChange();
@@ -226,65 +199,64 @@ function initUI() {
     });
   });
 
-  // Salva lezione
+  // Salva / Elimina lezione
   document.getElementById('btnSalvaLezione').addEventListener('click', salvaLezione);
-
-  // Elimina lezione
   document.getElementById('btnEliminaLezione').addEventListener('click', function() {
     var slot = allSlots.find(function(s){return s.id===editingSlotId;});
     if (slot && slot.recurringGroupId) {
-      closeModal('modalLezione');
-      openModal('modalElimina');
+      closeModal('modalLezione'); openModal('modalElimina');
     } else {
       if (confirm('Eliminare questa lezione?')) eliminaSlot(editingSlotId, false);
     }
   });
-
   document.getElementById('btnEliminaSolo').addEventListener('click', function() {
-    closeModal('modalElimina');
-    eliminaSlot(editingSlotId, false);
+    closeModal('modalElimina'); eliminaSlot(editingSlotId, false);
   });
   document.getElementById('btnEliminaTutti').addEventListener('click', function() {
-    closeModal('modalElimina');
-    eliminaSlot(editingSlotId, true);
+    closeModal('modalElimina'); eliminaSlot(editingSlotId, true);
   });
 
-  // Chiudi modal con [data-close]
+  // Chiudi modal
   document.querySelectorAll('[data-close]').forEach(function(btn) {
-    btn.addEventListener('click', function() { closeModal(btn.dataset.close); });
+    btn.addEventListener('click', function(){closeModal(btn.dataset.close);});
   });
   document.querySelectorAll('.modal-backdrop').forEach(function(bd) {
-    bd.addEventListener('click', function(e) {
-      if (e.target===bd) closeModal(bd.id);
-    });
+    bd.addEventListener('click', function(e){if(e.target===bd)closeModal(bd.id);});
   });
 
-  // Pannello laterale
+  // Pannello
   document.getElementById('btnClosePanel').addEventListener('click', closePanel);
   document.getElementById('panelOverlay').addEventListener('click', closePanel);
   document.getElementById('btnPanelModifica').addEventListener('click', function() {
-    if (panelSlotId) { closePanel(); openModalLezione(null, null, panelSlotId); }
+    if (panelSlotId) { closePanel(); openModalLezione(null,null,panelSlotId); }
+  });
+  document.getElementById('btnPanelElimina').addEventListener('click', function() {
+    if (!panelSlotId) return;
+    var slot = allSlots.find(function(s){return s.id===panelSlotId;});
+    if (slot && slot.recurringGroupId) {
+      editingSlotId = panelSlotId;
+      closePanel(); openModal('modalElimina');
+    } else {
+      if (confirm('Eliminare questa lezione?')) {
+        eliminaSlot(panelSlotId, false);
+        closePanel();
+      }
+    }
   });
   document.getElementById('btnPanelChiudi').addEventListener('click', chiudiSalaPanel);
-  document.getElementById('btnPanelMessaggio').addEventListener('click', messaggioPrenotati);
-
-  // Legenda
-  renderLegenda();
+  document.getElementById('btnPanelMessaggio').addEventListener('click', openModalMessaggio);
 }
 
 function onSalaChange() {
   var salaId = document.getElementById('lezSala').value;
   var sala   = allRooms.find(function(r){return r.id===salaId;});
-  var selCorso = document.getElementById('lezCorso');
-  selCorso.innerHTML = '<option value="">Seleziona corso…</option>';
+  var sel    = document.getElementById('lezCorso');
+  sel.innerHTML = '<option value="">Seleziona corso...</option>';
   if (sala) {
-    var compatible = allCourses.filter(function(c) {
-      return !c.compatibleRooms || c.compatibleRooms.length===0 || c.compatibleRooms.indexOf(salaId)!==-1;
-    });
-    compatible.forEach(function(c) {
-      var opt = document.createElement('option');
-      opt.value = c.id; opt.textContent = c.name;
-      selCorso.appendChild(opt);
+    allCourses.filter(function(c) {
+      return !c.compatibleRooms||c.compatibleRooms.length===0||c.compatibleRooms.indexOf(salaId)!==-1;
+    }).forEach(function(c) {
+      var o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o);
     });
     if (sala.capacity) document.getElementById('lezCapienza').value = sala.capacity;
   }
@@ -293,32 +265,14 @@ function onSalaChange() {
 
 function onCorsoChange() {
   var corsoId = document.getElementById('lezCorso').value;
-  var selIstr = document.getElementById('lezIstruttore');
-  selIstr.innerHTML = '<option value="">Seleziona istruttore…</option>';
-  var istrFiltrati = corsoId
-    ? allInstructors.filter(function(i) {
-        return !i.teachableCourses || i.teachableCourses.length===0 || i.teachableCourses.indexOf(corsoId)!==-1;
-      })
-    : allInstructors;
-  istrFiltrati.forEach(function(i) {
-    var opt = document.createElement('option');
-    opt.value = i.id; opt.textContent = i.name;
-    selIstr.appendChild(opt);
+  var sel     = document.getElementById('lezIstruttore');
+  sel.innerHTML = '<option value="">Seleziona istruttore...</option>';
+  (corsoId
+    ? allInstructors.filter(function(i){return !i.teachableCourses||i.teachableCourses.length===0||i.teachableCourses.indexOf(corsoId)!==-1;})
+    : allInstructors
+  ).forEach(function(i) {
+    var o=document.createElement('option'); o.value=i.id; o.textContent=i.name; sel.appendChild(o);
   });
-}
-
-// ── Legenda ───────────────────────────────────────────────────
-function renderLegenda() {
-  var leg = document.getElementById('legenda');
-  var html = '';
-  allRooms.forEach(function(r) {
-    html += '<div class="legenda-item">'
-      + '<div class="legenda-dot" style="background:' + (r.color||'#0f507b') + '"></div>'
-      + r.name + '</div>';
-  });
-  html += '<div class="legenda-item"><div class="legenda-dot" style="background:#e6165c"></div>Completo</div>';
-  html += '<div class="legenda-item"><div class="legenda-dot" style="background:#f5d89a;border:1px solid #c9821a"></div>Chiuso</div>';
-  leg.innerHTML = html;
 }
 
 // ── Render calendario ─────────────────────────────────────────
@@ -328,23 +282,25 @@ function renderCalendar() {
   var filterCorso= document.getElementById('filterCorso').value;
   var filterIstr = document.getElementById('filterIstruttore').value;
 
-  // Aggiorna titolo periodo
-  var endWeek = addDays(currentWeekStart, 5);
-  document.getElementById('calPeriod').textContent =
-    formatDateIt(currentWeekStart) + ' — ' + formatDateIt(endWeek);
+  // Titolo periodo senza caratteri strani
+  var startD = currentWeekStart;
+  var endD   = addDays(startD, 5);
+  var months = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  var periodoTxt = startD.getDate() + ' ' + months[startD.getMonth()] + ' - '
+    + endD.getDate() + ' ' + months[endD.getMonth()] + ' ' + endD.getFullYear();
+  document.getElementById('calPeriod').textContent = periodoTxt;
 
-  // Mappa slot per data+ora+sala
-  var slotMap = {};
-  allSlots.forEach(function(s) {
-    var key = s.date + '_' + s.hour + '_' + (s.roomId||'');
-    slotMap[key] = s;
-  });
-
-  // Mappa prenotazioni per slotId
+  // Mappa prenotazioni confermate per slotId
   var bookMap = {};
   allBookings.forEach(function(b) {
-    if (!bookMap[b.slotId]) bookMap[b.slotId] = [];
-    bookMap[b.slotId].push(b);
+    if (b.status !== 'confirmed') return;
+    bookMap[b.slotId] = (bookMap[b.slotId]||0) + 1;
+  });
+
+  // Mappa slot per data_ora_sala
+  var slotMap = {};
+  allSlots.forEach(function(s) {
+    slotMap[s.date+'_'+s.hour+'_'+(s.roomId||'')] = s;
   });
 
   var grid = document.getElementById('calGrid');
@@ -353,7 +309,7 @@ function renderCalendar() {
   // Header
   html += '<div class="cal-head-empty"></div>';
   for (var di=0; di<6; di++) {
-    var dayDate = addDays(currentWeekStart, di);
+    var dayDate = addDays(startD, di);
     var ymd     = toYMD(dayDate);
     var isToday = ymd === today;
     html += '<div class="cal-head-day' + (isToday?' today':'') + '">'
@@ -366,54 +322,54 @@ function renderCalendar() {
     html += '<div class="cal-time">' + String(hour).padStart(2,'0') + ':00</div>';
 
     for (var di2=0; di2<6; di2++) {
-      var dayDate2 = addDays(currentWeekStart, di2);
+      var dayDate2 = addDays(startD, di2);
       var ymd2     = toYMD(dayDate2);
       var isToday2 = ymd2 === today;
-
       html += '<div class="cal-cell' + (isToday2?' today-col':'') + '" data-date="' + ymd2 + '" data-hour="' + hour + '">';
       html += '<div class="cal-cell-inner">';
 
-      // Cerca slot per questa cella (per ogni sala attiva, se non filtrato)
       var rooms = filterSala ? allRooms.filter(function(r){return r.id===filterSala;}) : allRooms;
-
       var hasSlot = false;
+
       rooms.forEach(function(room) {
-        var key  = ymd2 + '_' + hour + '_' + room.id;
+        var key  = ymd2+'_'+hour+'_'+room.id;
         var slot = slotMap[key];
         if (!slot) return;
-
-        // Applica filtri corso/istruttore
         if (filterCorso && slot.courseId !== filterCorso) return;
         if (filterIstr  && slot.instructorId !== filterIstr) return;
 
         hasSlot = true;
-        var course  = allCourses.find(function(c){return c.id===slot.courseId;});
-        var istr    = allInstructors.find(function(i){return i.id===slot.instructorId;});
-        var bks     = (bookMap[slot.id]||[]).filter(function(b){return b.status==='confirmed';}).length;
-        var cap     = slot.maxCapacity || room.capacity || 5;
-        var pct     = Math.round((bks/cap)*100);
-        var isFull  = bks >= cap;
-        var isClosed= slot.isActive === false;
-        var color   = course ? course.color : (room.color||'#0f507b');
-        var istrIni = istr ? (istr.name||'').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase() : '—';
-        var courseN = course ? (course.name.length>10 ? course.name.substring(0,9)+'…' : course.name) : '?';
+        var course   = allCourses.find(function(c){return c.id===slot.courseId;});
+        var istr     = allInstructors.find(function(i){return i.id===slot.instructorId;});
+        var bks      = bookMap[slot.id] || 0;
+        var cap      = slot.maxCapacity || room.capacity || 5;
+        var pct      = Math.round((bks/cap)*100);
+        var isClosed = slot.isActive === false;
+        var isFull   = bks >= cap;
+        var isQuasi  = !isFull && (cap - bks) <= 2;
+        var courseName = course ? course.name : '?';
+        var istrName   = istr   ? istr.name.split(' ')[0] : '—';
 
-        if (isClosed) {
-          html += '<div class="slot-card closed" data-slotid="' + slot.id + '">'
-            + '<div class="slot-card-course">Chiuso</div></div>';
-        } else {
-          html += '<div class="slot-card ' + (isFull?'full':'free') + '" data-slotid="' + slot.id + '" style="background:' + color + ';">'
-            + '<div class="slot-card-course">' + courseN + '</div>'
-            + '<div class="slot-card-info">' + istrIni + ' · ' + bks + '/' + cap + '</div>'
-            + '<div class="slot-card-bar"><div class="slot-card-bar-fill" style="width:' + pct + '%"></div></div>'
-            + '</div>';
+        var cls = 'disponibile';
+        if (isClosed)   cls = 'chiuso';
+        else if (isFull) cls = 'completo';
+        else if (isQuasi) cls = 'quasi-pieno';
+
+        var postiTxt = isClosed ? 'Chiuso' : (isFull ? 'Completo' : bks+'/'+cap);
+
+        html += '<div class="slot-card ' + cls + '" data-slotid="' + slot.id + '">'
+          + '<div class="slot-card-course">' + (courseName.length>10?courseName.substring(0,9)+'…':courseName) + '</div>'
+          + '<div class="slot-card-info">' + istrName + '</div>'
+          + '<div class="slot-card-posti">' + postiTxt + '</div>';
+        if (!isClosed) {
+          html += '<div class="slot-card-bar"><div class="slot-card-bar-fill" style="width:'+pct+'%"></div></div>';
         }
+        html += '</div>';
       });
 
-      // Cella vuota cliccabile
       if (!hasSlot) {
         html += '<div class="slot-empty" data-date="' + ymd2 + '" data-hour="' + hour + '">'
-          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
           + 'Aggiungi</div>';
       }
 
@@ -423,7 +379,7 @@ function renderCalendar() {
 
   grid.innerHTML = html;
 
-  // Event listeners sulle slot card
+  // Listener slot
   grid.querySelectorAll('.slot-card').forEach(function(card) {
     card.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -431,7 +387,7 @@ function renderCalendar() {
     });
   });
 
-  // Event listeners celle vuote
+  // Listener celle vuote
   grid.querySelectorAll('.slot-empty').forEach(function(el) {
     el.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -439,7 +395,6 @@ function renderCalendar() {
     });
   });
 
-  // Click su cella (non su slot)
   grid.querySelectorAll('.cal-cell').forEach(function(cell) {
     cell.addEventListener('click', function() {
       openModalLezione(cell.dataset.date, parseInt(cell.dataset.hour), null);
@@ -453,7 +408,7 @@ function openModalLezione(date, hour, slotId) {
   document.getElementById('modalLezError').style.display = 'none';
   document.getElementById('btnEliminaLezione').style.display = slotId ? 'block' : 'none';
   document.getElementById('modalLezioneTitle').textContent = slotId ? 'Modifica Lezione' : 'Nuova Lezione';
-  document.getElementById('btnSalvaLezText').textContent = slotId ? 'Salva modifiche' : 'Salva lezione';
+  document.getElementById('btnSalvaLezText').textContent   = slotId ? 'Salva modifiche' : 'Salva lezione';
 
   if (slotId) {
     var slot = allSlots.find(function(s){return s.id===slotId;});
@@ -462,7 +417,7 @@ function openModalLezione(date, hour, slotId) {
       document.getElementById('lezOra').value  = slot.hour || 6;
       document.getElementById('lezSala').value = slot.roomId || '';
       onSalaChange();
-      document.getElementById('lezCorso').value = slot.courseId || '';
+      document.getElementById('lezCorso').value      = slot.courseId || '';
       onCorsoChange();
       document.getElementById('lezIstruttore').value = slot.instructorId || '';
       document.getElementById('lezCapienza').value   = slot.maxCapacity || 5;
@@ -474,27 +429,25 @@ function openModalLezione(date, hour, slotId) {
     onSalaChange();
   }
 
-  // Reset radio ripeti
   document.querySelectorAll('#radioRipeti .radio-opt').forEach(function(o,i){o.classList.toggle('selected',i===0);});
   document.querySelector('#radioRipeti input[value="once"]').checked = true;
-
   openModal('modalLezione');
 }
 
 async function salvaLezione() {
-  var data      = document.getElementById('lezData').value;
-  var ora       = parseInt(document.getElementById('lezOra').value);
-  var salaId    = document.getElementById('lezSala').value;
-  var corsoId   = document.getElementById('lezCorso').value;
-  var istrId    = document.getElementById('lezIstruttore').value;
-  var capienza  = parseInt(document.getElementById('lezCapienza').value) || 5;
-  var ripeti    = document.querySelector('#radioRipeti input:checked').value;
-  var errEl     = document.getElementById('modalLezError');
+  var data     = document.getElementById('lezData').value;
+  var ora      = parseInt(document.getElementById('lezOra').value);
+  var salaId   = document.getElementById('lezSala').value;
+  var corsoId  = document.getElementById('lezCorso').value;
+  var istrId   = document.getElementById('lezIstruttore').value;
+  var capienza = parseInt(document.getElementById('lezCapienza').value)||5;
+  var ripeti   = document.querySelector('#radioRipeti input:checked').value;
+  var errEl    = document.getElementById('modalLezError');
   errEl.style.display = 'none';
 
-  if (!data || !salaId || !corsoId || !istrId) {
-    errEl.textContent = 'Compila tutti i campi obbligatori.';
-    errEl.style.display = 'block'; return;
+  if (!data||!salaId||!corsoId||!istrId) {
+    errEl.textContent='Compila tutti i campi obbligatori.';
+    errEl.style.display='block'; return;
   }
 
   document.getElementById('btnSalvaLezText').classList.add('hidden');
@@ -502,66 +455,48 @@ async function salvaLezione() {
   document.getElementById('btnSalvaLezione').disabled = true;
 
   try {
-    var dates = getDatesForRepeat(data, ripeti);
-    var groupId = dates.length > 1 ? ('grp_' + Date.now()) : null;
-
     if (editingSlotId) {
-      // Modifica slot esistente
       await updateDoc(doc(db,'slots',editingSlotId), {
-        date:data, hour:ora, roomId:salaId, courseId:corsoId,
-        instructorId:istrId, maxCapacity:capienza, isActive:true
+        date:data,hour:ora,roomId:salaId,courseId:corsoId,
+        instructorId:istrId,maxCapacity:capienza,isActive:true
       });
       showToast('Lezione aggiornata!');
     } else {
-      // Crea nuovi slot
-      for (var i=0; i<dates.length; i++) {
-        var slotData = {
-          date:dates[i], hour:ora, roomId:salaId, courseId:corsoId,
-          instructorId:istrId, maxCapacity:capienza, isActive:true,
-          createdAt:serverTimestamp()
-        };
-        if (groupId) slotData.recurringGroupId = groupId;
-        await addDoc(collection(db,'slots'), slotData);
+      var dates   = getDatesForRepeat(data, ripeti);
+      var groupId = dates.length>1 ? ('grp_'+Date.now()) : null;
+      for (var i=0;i<dates.length;i++) {
+        var sd = {date:dates[i],hour:ora,roomId:salaId,courseId:corsoId,
+          instructorId:istrId,maxCapacity:capienza,isActive:true,createdAt:serverTimestamp()};
+        if (groupId) sd.recurringGroupId = groupId;
+        await addDoc(collection(db,'slots'), sd);
       }
-      showToast(dates.length > 1 ? 'Lezioni create (' + dates.length + ')!' : 'Lezione creata!');
+      showToast(dates.length>1?'Lezioni create ('+dates.length+')!':'Lezione creata!');
     }
-
     closeModal('modalLezione');
-    await loadData();
-    renderCalendar();
+    await loadData(); renderCalendar();
   } catch(err) {
-    errEl.textContent = 'Errore: ' + err.message;
-    errEl.style.display = 'block';
+    errEl.textContent='Errore: '+err.message; errEl.style.display='block';
   } finally {
     document.getElementById('btnSalvaLezText').classList.remove('hidden');
     document.getElementById('btnSalvaLezSpinner').classList.add('hidden');
-    document.getElementById('btnSalvaLezione').disabled = false;
+    document.getElementById('btnSalvaLezione').disabled=false;
   }
 }
 
 function getDatesForRepeat(startDate, ripeti) {
-  var dates = [];
   var start = new Date(startDate);
-  if (ripeti === 'once') {
-    dates.push(toYMD(start)); return dates;
-  }
-  if (ripeti === 'week') {
-    var mon = getMonday(start);
-    for (var i=0; i<6; i++) {
-      var d = addDays(mon, i);
-      dates.push(toYMD(d));
-    }
+  if (ripeti==='once') return [toYMD(start)];
+  if (ripeti==='week') {
+    var mon=getMonday(start); var dates=[];
+    for(var i=0;i<6;i++) dates.push(toYMD(addDays(mon,i)));
     return dates;
   }
-  if (ripeti === 'month') {
-    var d2 = new Date(start.getFullYear(), start.getMonth(), 1);
-    var endM = new Date(start.getFullYear(), start.getMonth()+1, 1);
-    while (d2 < endM) {
-      var dow = d2.getDay();
-      if (dow >= 1 && dow <= 6) dates.push(toYMD(d2));
-      d2 = addDays(d2, 1);
-    }
-    return dates;
+  if (ripeti==='month') {
+    var d=new Date(start.getFullYear(),start.getMonth(),1);
+    var end=new Date(start.getFullYear(),start.getMonth()+1,1);
+    var dates2=[];
+    while(d<end){var dow=d.getDay();if(dow>=1&&dow<=6)dates2.push(toYMD(d));d=addDays(d,1);}
+    return dates2;
   }
   return [toYMD(start)];
 }
@@ -570,24 +505,18 @@ async function eliminaSlot(slotId, tutti) {
   try {
     if (tutti) {
       var slot = allSlots.find(function(s){return s.id===slotId;});
-      if (slot && slot.recurringGroupId) {
-        var gruppoSlots = allSlots.filter(function(s){return s.recurringGroupId===slot.recurringGroupId;});
-        for (var i=0; i<gruppoSlots.length; i++) {
-          await deleteDoc(doc(db,'slots',gruppoSlots[i].id));
-        }
-        showToast('Serie di lezioni eliminata.', 'info');
+      if (slot&&slot.recurringGroupId) {
+        var serie = allSlots.filter(function(s){return s.recurringGroupId===slot.recurringGroupId;});
+        for(var i=0;i<serie.length;i++) await deleteDoc(doc(db,'slots',serie[i].id));
+        showToast('Serie di lezioni eliminata.','info');
       }
     } else {
       await deleteDoc(doc(db,'slots',slotId));
-      showToast('Lezione eliminata.', 'info');
+      showToast('Lezione eliminata.','info');
     }
-    closeModal('modalLezione');
-    closeModal('modalElimina');
-    await loadData();
-    renderCalendar();
-  } catch(err) {
-    showToast('Errore eliminazione.', 'error');
-  }
+    closeModal('modalLezione'); closeModal('modalElimina');
+    await loadData(); renderCalendar();
+  } catch(err) { showToast('Errore eliminazione.','error'); }
 }
 
 // ── Pannello dettaglio ────────────────────────────────────────
@@ -599,32 +528,39 @@ async function openPanel(slotId) {
   var course = allCourses.find(function(c){return c.id===slot.courseId;});
   var room   = allRooms.find(function(r){return r.id===slot.roomId;});
   var istr   = allInstructors.find(function(i){return i.id===slot.instructorId;});
-  var bks    = allBookings.filter(function(b){return b.slotId===slotId;});
-  var confirmed = bks.filter(function(b){return b.status==='confirmed';}).length;
+  var bks    = allBookings.filter(function(b){return b.slotId===slotId&&b.status==='confirmed';});
+  var cap    = slot.maxCapacity || 5;
+  var isFull = bks.length >= cap;
+  var isQuasi= !isFull && (cap-bks.length)<=2;
+
+  // Badge stato
+  var statoCls = 'badge-info';
+  var statoTxt = 'Disponibile';
+  if (slot.isActive===false) { statoCls='badge-inactive'; statoTxt='Chiuso'; }
+  else if (isFull)           { statoCls='badge-inactive'; statoTxt='Completo'; }
+  else if (isQuasi)          { statoCls='badge-pending';  statoTxt='Quasi pieno'; }
 
   document.getElementById('panelTitle').textContent = (course&&course.name)||'Lezione';
-  document.getElementById('panelSub').textContent   = slot.date + ' alle ' + String(slot.hour).padStart(2,'0') + ':00';
+  document.getElementById('panelSub').textContent   = formatDateLong(new Date(slot.date)) + ' alle ' + String(slot.hour).padStart(2,'0') + ':00';
 
   document.getElementById('panelInfo').innerHTML = ''
-    + '<div class="slot-detail-row"><span class="slot-detail-label">Sala</span><span class="slot-detail-val">' + ((room&&room.name)||'—') + '</span></div>'
-    + '<div class="slot-detail-row"><span class="slot-detail-label">Istruttore</span><span class="slot-detail-val">' + ((istr&&istr.name)||'—') + '</span></div>'
-    + '<div class="slot-detail-row"><span class="slot-detail-label">Prenotati</span><span class="slot-detail-val">' + confirmed + '/' + (slot.maxCapacity||5) + '</span></div>'
-    + '<div class="slot-detail-row"><span class="slot-detail-label">Stato</span><span class="slot-detail-val">' + (slot.isActive===false?'Chiuso':'Aperto') + '</span></div>';
+    + '<div class="slot-detail-row"><span class="slot-detail-label">Sala</span><span class="slot-detail-val">'       + ((room&&room.name)||'—')   + '</span></div>'
+    + '<div class="slot-detail-row"><span class="slot-detail-label">Istruttore</span><span class="slot-detail-val">' + ((istr&&istr.name)||'—')   + '</span></div>'
+    + '<div class="slot-detail-row"><span class="slot-detail-label">Prenotati</span><span class="slot-detail-val">'  + bks.length+'/'+cap          + '</span></div>'
+    + '<div class="slot-detail-row"><span class="slot-detail-label">Stato</span><span class="slot-detail-val"><span class="badge ' + statoCls + '">' + statoTxt + '</span></span></div>';
 
-  document.getElementById('panelPrenotatiTitle').textContent = 'Prenotati (' + confirmed + ')';
+  document.getElementById('panelPrenotatiTitle').textContent = 'Prenotati (' + bks.length + ')';
 
-  // Lista prenotati
   var userMap = {};
   allUsers.forEach(function(u){userMap[u.id]=u;});
   var listHtml = '';
-  var confirmed_bks = bks.filter(function(b){return b.status==='confirmed';});
-  if (!confirmed_bks.length) {
-    listHtml = '<div style="color:var(--text-muted);font-size:.8rem;padding:12px 0;">Nessun corsista prenotato.</div>';
+  if (!bks.length) {
+    listHtml = '<div style="color:var(--text-muted);font-size:.8rem;padding:10px 0;">Nessun corsista prenotato.</div>';
   } else {
-    confirmed_bks.forEach(function(b) {
+    bks.forEach(function(b) {
       var u = userMap[b.userId];
       if (!u) return;
-      var ini = ((u.name||'?')[0] + ((u.surname||'')[0]||'')).toUpperCase();
+      var ini = ((u.name||'?')[0]+((u.surname||'')[0]||'')).toUpperCase();
       listHtml += '<div class="prenotato-item">'
         + '<div class="prenotato-avatar">' + ini + '</div>'
         + '<div><div style="font-weight:700;font-size:.82rem;">' + (u.name||'') + ' ' + (u.surname||'') + '</div>'
@@ -633,9 +569,8 @@ async function openPanel(slotId) {
   }
   document.getElementById('panelPrenotati').innerHTML = listHtml;
 
-  // Pulsante chiudi sala
-  document.getElementById('btnPanelChiudi').textContent =
-    slot.isActive === false ? 'Riapri sala' : 'Chiudi sala';
+  document.getElementById('btnPanelChiudiLabel').textContent =
+    slot.isActive===false ? 'Riapri sala' : 'Chiudi sala';
 
   document.getElementById('sidePanel').classList.add('open');
   document.getElementById('panelOverlay').classList.add('open');
@@ -649,21 +584,89 @@ function closePanel() {
 
 async function chiudiSalaPanel() {
   if (!panelSlotId) return;
-  var slot     = allSlots.find(function(s){return s.id===panelSlotId;});
-  var nuovoStato = slot && slot.isActive === false ? true : false;
-  await updateDoc(doc(db,'slots',panelSlotId), {isActive: nuovoStato});
-  showToast(nuovoStato ? 'Sala riaperta.' : 'Sala chiusa.', 'info');
-  await loadData();
-  renderCalendar();
-  closePanel();
+  var slot = allSlots.find(function(s){return s.id===panelSlotId;});
+  var nuovoStato = (slot&&slot.isActive===false) ? true : false;
+  await updateDoc(doc(db,'slots',panelSlotId),{isActive:nuovoStato});
+  showToast(nuovoStato?'Sala riaperta.':'Sala chiusa.','info');
+  await loadData(); renderCalendar();
+  openPanel(panelSlotId);
 }
 
-function messaggioPrenotati() {
+// ── Modal Messaggio prenotati ─────────────────────────────────
+function openModalMessaggio() {
   if (!panelSlotId) return;
-  var userMap = {};
+  var slot = allSlots.find(function(s){return s.id===panelSlotId;});
+  if (!slot) return;
+
+  var course = allCourses.find(function(c){return c.id===slot.courseId;});
+  var bks    = allBookings.filter(function(b){return b.slotId===panelSlotId&&b.status==='confirmed';});
+  var userMap= {};
   allUsers.forEach(function(u){userMap[u.id]=u;});
-  var bks = allBookings.filter(function(b){return b.slotId===panelSlotId&&b.status==='confirmed';});
-  if (!bks.length) { showToast('Nessun prenotato per questa lezione.', 'info'); return; }
-  var emails = bks.map(function(b){var u=userMap[b.userId];return u?u.email:'';}).filter(Boolean);
-  window.location.href = 'mailto:' + emails.join(',') + '?subject=Comunicazione lezione';
+
+  var courseName = (course&&course.name)||'Lezione';
+  var hour       = String(slot.hour).padStart(2,'0')+':00';
+  var giorno     = formatDateLong(new Date(slot.date));
+
+  // Info slot
+  document.getElementById('msgSlotInfo').textContent = courseName + ' — ' + giorno + ' alle ' + hour;
+
+  // Destinatari
+  var recipients = [];
+  bks.forEach(function(b) { var u=userMap[b.userId]; if(u) recipients.push(u); });
+  document.getElementById('msgRecipientsTitle').textContent = recipients.length + ' destinatari';
+
+  var recipientsHtml = '';
+  if (!recipients.length) {
+    recipientsHtml = '<div style="color:var(--text-muted);font-size:.8rem;">Nessun prenotato.</div>';
+  } else {
+    recipients.forEach(function(u) {
+      var ini = ((u.name||'?')[0]+((u.surname||'')[0]||'')).toUpperCase();
+      recipientsHtml += '<div class="msg-recipient">'
+        + '<div class="msg-avatar">' + ini + '</div>'
+        + '<div><div style="font-weight:700;font-size:.8rem;">' + (u.name||'') + ' ' + (u.surname||'') + '</div>'
+        + '<div style="font-size:.7rem;color:var(--text-muted);">' + (u.email||'') + (u.phone?' · '+u.phone:'') + '</div></div></div>';
+    });
+  }
+  document.getElementById('msgRecipients').innerHTML = recipientsHtml;
+
+  // Testo default
+  document.getElementById('msgTesto').value =
+    'Ciao {nome},\nla lezione di ' + courseName + ' del ' + giorno + ' alle ' + hour + ' è stata annullata.\nCi scusiamo per il disagio.';
+
+  // Pulsante WhatsApp — apre wa.me uno per uno per il primo destinatario
+  document.getElementById('btnMsgWA').onclick = function() {
+    if (!recipients.length) { showToast('Nessun destinatario.','error'); return; }
+    var testo = document.getElementById('msgTesto').value;
+    recipients.forEach(function(u) {
+      if (!u.phone) return;
+      var phone = u.phone.replace(/\D/g,'');
+      var msg   = testo
+        .replace(/{nome}/g, u.name||'')
+        .replace(/{corso}/g, courseName)
+        .replace(/{ora}/g, hour)
+        .replace(/{giorno}/g, giorno);
+      window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg), '_blank');
+    });
+    closeModal('modalMessaggio');
+    showToast('WhatsApp aperto per ' + recipients.length + ' corsisti.','success');
+  };
+
+  // Pulsante Email — mailto con tutti i destinatari
+  document.getElementById('btnMsgEmail').onclick = function() {
+    if (!recipients.length) { showToast('Nessun destinatario.','error'); return; }
+    var emails = recipients.map(function(u){return u.email;}).filter(Boolean);
+    var testo  = document.getElementById('msgTesto').value;
+    var oggetto= 'Comunicazione lezione ' + courseName + ' - ' + giorno;
+    var body   = testo
+      .replace(/{corso}/g, courseName)
+      .replace(/{ora}/g, hour)
+      .replace(/{giorno}/g, giorno);
+    window.location.href = 'mailto:' + emails.join(',')
+      + '?subject=' + encodeURIComponent(oggetto)
+      + '&body='    + encodeURIComponent(body);
+    closeModal('modalMessaggio');
+  };
+
+  closePanel();
+  openModal('modalMessaggio');
 }
