@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messaggi — Gestionale Palestra</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Layout due colonne ── */
+    .msg-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* ── Step indicator ── */
+    .steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 800; flex-shrink: 0;
+    }
+    .step.active .step-num { background: var(--blu); color: #fff; }
+    .step.active { color: var(--text); }
+    .step.done .step-num { background: #1a8a45; color: #fff; }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 8px; min-width: 20px; }
+
+    /* ── Sezione step ── */
+    .step-section { display: none; }
+    .step-section.active { display: block; }
+
+    /* ── Lista soci checkbox ── */
+    .soci-table-wrap {
+      max-height: 280px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      margin-top: 10px;
+    }
+    .socio-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .15s;
+    }
+    .socio-row:last-child { border-bottom: none; }
+    .socio-row:hover { background: var(--bg); }
+    .socio-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+    .socio-avatar-sm {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .68rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .socio-name-sm { font-size: .82rem; font-weight: 700; color: var(--text); flex: 1; }
+    .socio-email-sm { font-size: .72rem; color: var(--text-muted); }
+
+    /* ── Radio tipo ── */
+    .tipo-radio {
+      display: flex; gap: 10px; margin-top: 6px;
+    }
+    .tipo-opt {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border: 1.5px solid var(--border);
+      border-radius: 6px; cursor: pointer; font-size: .82rem;
+      font-weight: 600; color: var(--text-muted); transition: all .18s;
+      flex: 1; justify-content: center;
+    }
+    .tipo-opt input { display: none; }
+    .tipo-opt.selected { border-color: var(--blu); color: var(--blu); background: var(--blu-light); }
+
+    /* ── Anteprima messaggio ── */
+    .anteprima-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      font-size: .82rem; color: var(--text); line-height: 1.6;
+      white-space: pre-wrap; min-height: 80px; margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* ── Pannello invio WA step by step ── */
+    .wa-step-panel {
+      background: #e8f5e9; border: 1px solid #a5d6a7;
+      border-radius: var(--radius); padding: 20px 22px; margin-top: 14px;
+      display: none;
+    }
+    .wa-step-panel.visible { display: block; }
+    .wa-step-counter {
+      font-size: .72rem; font-weight: 700; color: #1a8a45;
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+    }
+    .wa-step-name {
+      font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 14px;
+    }
+
+    /* ── Template cards ── */
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .template-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .template-card-header { display: flex; align-items: center; gap: 8px; }
+    .template-name { font-size: .88rem; font-weight: 800; color: var(--text); flex: 1; }
+    .template-preview {
+      font-size: .78rem; color: var(--text-muted);
+      line-height: 1.5; flex: 1;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .template-actions { display: flex; gap: 6px; }
+
+    /* ── Variabili helper ── */
+    .var-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .var-chip {
+      padding: 3px 9px; background: var(--blu-light); color: var(--blu);
+      border-radius: 20px; font-size: .72rem; font-weight: 700;
+      cursor: pointer; transition: background .15s; border: 1px solid transparent;
+    }
+    .var-chip:hover { background: var(--blu); color: #fff; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15,40,70,.45);
+      backdrop-filter: blur(3px); z-index: 400;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn{from{opacity:0;transform:translateY(-10px) scale(.98)}to{opacity:1;transform:none}}
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: #fff; z-index: 1;
+    }
+    .modal-title  { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .modal-body   { padding: 20px 22px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--border); }
+    .modal-close  { color: var(--text-muted); padding: 4px; border-radius: 5px; cursor: pointer; background: none; border: none; }
+    .modal-close:hover { color: var(--magenta); }
+
+    /* ── Toast ── */
+    #toast-container { position:fixed; bottom:24px; right:24px; z-index:500; display:flex; flex-direction:column; gap:10px; }
+    .toast { display:flex; align-items:center; gap:10px; padding:12px 18px; border-radius:6px; color:#fff; font-size:.82rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.15); min-width:220px; animation:toastIn .2s ease; }
+    @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1}}
+    .toast.success{background:#1a8a45}.toast.error{background:var(--magenta)}.toast.info{background:var(--blu)}
+
+    @media(max-width:900px) { .msg-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="hidden">
+
+<div class="app-layout">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title">Messaggi</div>
+    </div>
+
+    <div class="page-content">
+      <div class="msg-layout">
+
+        <!-- ── COLONNA SINISTRA: Invia messaggio ── -->
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Invia messaggio
+            </div>
+
+            <!-- Step indicator -->
+            <div class="steps" style="margin-top:14px;">
+              <div class="step active" id="step1ind">
+                <div class="step-num">1</div>
+                Destinatari
+              </div>
+              <div class="step-line"></div>
+              <div class="step" id="step2ind">
+                <div class="step-num">2</div>
+                Messaggio
+              </div>
+              <div class="step-line"></div>
+              <div class="step" id="step3ind">
+                <div class="step-num">3</div>
+                Invia
+              </div>
+            </div>
+
+            <!-- STEP 1: Destinatari -->
+            <div class="step-section active" id="stepSec1">
+              <div class="form-group">
+                <label class="form-label">Seleziona destinatari</label>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+                  <label class="tipo-opt selected" id="lblTutti" style="justify-content:flex-start;flex:none;">
+                    <input type="radio" name="destinatari" value="tutti" checked />
+                    Tutti i soci attivi
+                  </label>
+                  <label class="tipo-opt" id="lblScadenza" style="justify-content:flex-start;flex:none;">
+                    <input type="radio" name="destinatari" value="scadenza" />
+                    Abbonamenti in scadenza (entro 7 giorni)
+                  </label>
+                  <label class="tipo-opt" id="lblManuale" style="justify-content:flex-start;flex:none;">
+                    <input type="radio" name="destinatari" value="manuale" />
+                    Selezione manuale
+                  </label>
+                </div>
+              </div>
+
+              <!-- Selezione manuale -->
+              <div id="selezioneManuale" style="display:none;">
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                  <input type="text" class="search-input" id="searchSoci" placeholder="Cerca socio…"
+                    style="flex:1;padding:7px 11px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.8rem;outline:none;" />
+                  <button class="btn btn-ghost" id="btnSelTutti" style="font-size:.75rem;padding:7px 12px;">Tutti</button>
+                  <button class="btn btn-ghost" id="btnSelNessuno" style="font-size:.75rem;padding:7px 12px;">Nessuno</button>
+                </div>
+                <div class="soci-table-wrap" id="sociCheckList"></div>
+              </div>
+
+              <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" id="btnStep1Next">
+                  Avanti
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 2: Messaggio -->
+            <div class="step-section" id="stepSec2">
+              <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <div class="tipo-radio">
+                  <label class="tipo-opt selected" id="lblWA">
+                    <input type="radio" name="tipoMsg" value="whatsapp" checked />
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    WhatsApp
+                  </label>
+                  <label class="tipo-opt" id="lblEmail">
+                    <input type="radio" name="tipoMsg" value="email" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Email
+                  </label>
+                </div>
+              </div>
+
+              <!-- Oggetto (solo email) -->
+              <div class="form-group" id="oggettoWrap" style="display:none;">
+                <label class="form-label">Oggetto email</label>
+                <input type="text" class="form-control" id="msgOggetto" placeholder="Es. Comunicazione importante" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Template (opzionale)</label>
+                <select class="form-control" id="selectTemplate">
+                  <option value="">Scrivi messaggio libero...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Testo del messaggio</label>
+                <textarea class="form-control" id="msgTesto" rows="5" style="resize:vertical;"
+                  placeholder="Scrivi il tuo messaggio…"></textarea>
+                <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px;">
+                  Variabili: clicca per inserirle nel testo
+                </div>
+                <div class="var-chips" id="varChips">
+                  <span class="var-chip" data-var="{nome}">{nome}</span>
+                  <span class="var-chip" data-var="{cognome}">{cognome}</span>
+                  <span class="var-chip" data-var="{corso}">{corso}</span>
+                  <span class="var-chip" data-var="{sala}">{sala}</span>
+                  <span class="var-chip" data-var="{ora}">{ora}</span>
+                  <span class="var-chip" data-var="{giorno}">{giorno}</span>
+                  <span class="var-chip" data-var="{data}">{data}</span>
+                  <span class="var-chip" data-var="{scadenza}">{scadenza}</span>
+                  <span class="var-chip" data-var="{importo}">{importo}</span>
+                </div>
+              </div>
+
+              <!-- Anteprima -->
+              <div class="form-group">
+                <label class="form-label">Anteprima (con dati del primo destinatario)</label>
+                <div class="anteprima-box" id="anteprimaBox">Il messaggio apparirà qui…</div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;margin-top:14px;">
+                <button class="btn btn-ghost" id="btnStep2Back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                  Indietro
+                </button>
+                <button class="btn btn-primary" id="btnStep2Next">
+                  Avanti
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 3: Invia -->
+            <div class="step-section" id="stepSec3">
+              <div id="riepilogoInvio" style="background:var(--bg);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;font-size:.85rem;"></div>
+
+              <!-- Pannello WA step-by-step -->
+              <div class="wa-step-panel" id="waPanelStep">
+                <div class="wa-step-counter" id="waCounter"></div>
+                <div class="wa-step-name" id="waName"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button class="btn btn-primary" id="btnWAApri">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Apri WhatsApp
+                  </button>
+                  <button class="btn btn-secondary" id="btnWANext">
+                    Prossimo destinatario
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                  <button class="btn btn-ghost" id="btnWAFine">Fine</button>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;margin-top:14px;">
+                <button class="btn btn-ghost" id="btnStep3Back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                  Indietro
+                </button>
+                <button class="btn btn-primary" id="btnInvia">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <span id="btnInviaLabel">Invia</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── COLONNA DESTRA: Info ── -->
+        <div>
+          <div class="card">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Come funziona
+            </div>
+            <div style="font-size:.8rem;color:var(--text-muted);line-height:1.7;margin-top:10px;">
+              <p style="margin-bottom:8px;"><strong style="color:var(--text);">WhatsApp</strong> — Il gestionale apre WhatsApp sul tuo computer con il testo già pronto. Devi solo premere "Invia" per ogni destinatario.</p>
+              <p><strong style="color:var(--text);">Email</strong> — Si apre il tuo programma email (Mail, Outlook…) con tutti i destinatari e il testo già compilati. Premi "Invia" una sola volta.</p>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+              <div style="font-size:.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Destinatari selezionati</div>
+              <div id="selectedCount" style="font-size:1.4rem;font-weight:800;color:var(--blu);">0</div>
+              <div style="font-size:.75rem;color:var(--text-muted);">soci</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Template ── -->
+      <div class="section-header" style="margin-top:8px;">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" style="vertical-align:middle;margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Template messaggi
+        </div>
+        <button class="btn btn-primary" id="btnNuovoTemplate">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuovo Template
+        </button>
+      </div>
+
+      <div class="template-grid" id="templateGrid">
+        <div style="color:var(--text-muted);font-size:.82rem;padding:20px 0;">Caricamento template…</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal template -->
+<div class="modal-backdrop" id="modalTemplate">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTemplateTitle">Nuovo Template</div>
+      <button class="modal-close" data-close="modalTemplate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome template *</label>
+        <input type="text" class="form-control" id="tplNome" placeholder="Es. Promemoria lezione" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="tipo-radio">
+          <label class="tipo-opt selected" id="tplLblWA">
+            <input type="radio" name="tplTipo" value="whatsapp" checked />WhatsApp
+          </label>
+          <label class="tipo-opt" id="tplLblEmail">
+            <input type="radio" name="tplTipo" value="email" />Email
+          </label>
+        </div>
+      </div>
+      <div class="form-group" id="tplOggettoWrap" style="display:none;">
+        <label class="form-label">Oggetto email</label>
+        <input type="text" class="form-control" id="tplOggetto" placeholder="Oggetto email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Corpo del messaggio *</label>
+        <textarea class="form-control" id="tplBody" rows="6" style="resize:vertical;"
+          placeholder="Scrivi il messaggio…"></textarea>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px;">Clicca una variabile per inserirla:</div>
+        <div class="var-chips" id="tplVarChips">
+          <span class="var-chip" data-var="{nome}">{nome}</span>
+          <span class="var-chip" data-var="{cognome}">{cognome}</span>
+          <span class="var-chip" data-var="{corso}">{corso}</span>
+          <span class="var-chip" data-var="{sala}">{sala}</span>
+          <span class="var-chip" data-var="{ora}">{ora}</span>
+          <span class="var-chip" data-var="{giorno}">{giorno}</span>
+          <span class="var-chip" data-var="{data}">{data}</span>
+          <span class="var-chip" data-var="{scadenza}">{scadenza}</span>
+          <span class="var-chip" data-var="{importo}">{importo}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalTemplate">Annulla</button>
+      <button class="btn btn-primary" id="btnSalvaTemplate">Salva template</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script type="module" src="js/messaggi.js"></script>
+</body>
+</html>
