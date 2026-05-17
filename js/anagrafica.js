@@ -255,7 +255,9 @@ function renderTabella(soci) {
     el.addEventListener('click', function() { openModalPagamento(el.dataset.id); });
   });
   tbody.querySelectorAll('.btn-messaggio').forEach(function(el) {
-    el.addEventListener('click', function() { window.location.href = 'messaggi.html'; });
+    el.addEventListener('click', function() {
+      window.location.href = 'messaggi.html?socioId=' + el.dataset.id;
+    });
   });
   tbody.querySelectorAll('.btn-elimina').forEach(function(el) {
     el.addEventListener('click', function() { eliminaSocio(el.dataset.id); });
