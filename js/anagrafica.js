@@ -539,105 +539,138 @@ function setupDetailPanel() {
 }
 
 async function openDetail(id) {
-  var s = allSoci.find(function(x) { return x.id === id; });
-  if (!s) return;
-  currentSocio = s;
-  var color = avatarColor(s.name);
-  var ini   = initials(s.name, s.surname);
-  var isAbb = s.paymentType === 'subscription';
-  var stato = s.status === 'sospeso' ? 'sospeso' : 'attivo';
+  try {
+    var s = allSoci.find(function(x) { return x.id === id; });
+    if (!s) { showToast('Socio non trovato, ricarica la pagina.', 'error'); return; }
+    currentSocio = s;
+    var color = avatarColor(s.name);
+    var ini   = initials(s.name, s.surname);
+    var isAbb = s.paymentType === 'subscription';
+    var stato = s.status === 'sospeso' ? 'sospeso' : 'attivo';
 
-  document.getElementById('detailAvatar').style.background = color;
-  document.getElementById('detailAvatar').textContent      = ini;
-  document.getElementById('detailName').textContent = (s.name || '') + ' ' + (s.surname || '');
-  document.getElementById('detailSub').textContent  = s.email || '';
-  document.getElementById('d-nome').textContent     = s.name    || '—';
-  document.getElementById('d-cognome').textContent  = s.surname || '—';
-  document.getElementById('d-email').innerHTML      = '<a href="mailto:' + (s.email||'') + '" class="contact-link">' + (s.email||'—') + '</a>';
-  document.getElementById('d-telefono').innerHTML   = s.phone
-    ? '<a href="https://wa.me/' + (s.phone||'').replace(/\D/g,'') + '" target="_blank" class="contact-link">' + s.phone + '</a>'
-    : '—';
-  document.getElementById('d-tipo').textContent     = isAbb ? 'Abbonamento' : 'A lezione';
-  document.getElementById('d-note').textContent     = s.notes || '—';
-  document.getElementById('d-data').textContent     = formatDate(s.createdAt);
-  document.getElementById('d-saldo-wrap').style.display    = isAbb ? 'none' : 'block';
-  document.getElementById('d-scadenza-wrap').style.display = isAbb ? 'block' : 'none';
-  document.getElementById('d-saldo').textContent    = (s.creditBalance || 0) + ' lezioni';
-  document.getElementById('d-scadenza').textContent = formatDate(s.subscriptionExpiry);
-  document.getElementById('btnDetailSospendi').textContent = stato === 'sospeso' ? 'Riattiva' : 'Sospendi';
+    document.getElementById('detailAvatar').style.background = color;
+    document.getElementById('detailAvatar').textContent      = ini;
+    document.getElementById('detailName').textContent = (s.name||'') + ' ' + (s.surname||'');
+    document.getElementById('detailSub').textContent  = s.email || '';
+    document.getElementById('d-nome').textContent     = s.name    || '—';
+    document.getElementById('d-cognome').textContent  = s.surname || '—';
+    document.getElementById('d-email').innerHTML      = '<a href="mailto:' + (s.email||'') + '" class="contact-link">' + (s.email||'—') + '</a>';
+    document.getElementById('d-telefono').innerHTML   = s.phone
+      ? '<a href="https://wa.me/' + (s.phone||'').replace(/\D/g,'') + '" target="_blank" class="contact-link">' + s.phone + '</a>'
+      : '—';
+    document.getElementById('d-tipo').textContent     = isAbb ? 'Abbonamento' : 'A lezione';
+    document.getElementById('d-note').textContent     = s.notes || '—';
+    document.getElementById('d-data').textContent     = formatDate(s.createdAt);
+    document.getElementById('d-saldo-wrap').style.display    = isAbb ? 'none' : 'block';
+    document.getElementById('d-scadenza-wrap').style.display = isAbb ? 'block' : 'none';
+    document.getElementById('d-saldo').textContent    = (s.creditBalance || 0) + ' lezioni';
+    document.getElementById('d-scadenza').textContent = formatDate(s.subscriptionExpiry);
+    document.getElementById('btnDetailSospendi').textContent = stato === 'sospeso' ? 'Riattiva' : 'Sospendi';
 
-  document.getElementById('btnDetailWA').onclick = function() {
-    if (s.phone) window.open('https://wa.me/' + s.phone.replace(/\D/g,''), '_blank');
-    else showToast('Nessun numero di telefono.', 'error');
-  };
-  document.getElementById('btnDetailEmail').onclick = function() {
-    if (s.email) window.location.href = 'mailto:' + s.email;
-    else showToast('Nessuna email.', 'error');
-  };
+    document.getElementById('btnDetailWA').onclick = function() {
+      if (s.phone) window.open('https://wa.me/' + s.phone.replace(/\D/g,''), '_blank');
+      else showToast('Nessun numero di telefono.', 'error');
+    };
+    document.getElementById('btnDetailEmail').onclick = function() {
+      if (s.email) window.location.href = 'mailto:' + s.email;
+      else showToast('Nessuna email.', 'error');
+    };
 
-  document.getElementById('detailPanel').classList.add('open');
-  document.getElementById('overlayDetail').classList.add('open');
-  loadDetailPrenotazioni(id);
-  loadDetailPagamenti(id);
+    // Apri pannello subito
+    document.getElementById('detailPanel').classList.add('open');
+    document.getElementById('overlayDetail').classList.add('open');
+
+    // Carica dati tab in background
+    loadDetailPrenotazioni(id);
+    loadDetailPagamenti(id);
+  } catch(err) {
+    console.error('openDetail error:', err);
+    showToast('Errore: ' + err.message, 'error');
+  }
 }
 
 async function loadDetailPrenotazioni(userId) {
   var container = document.getElementById('listaPrenotazioni');
-  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Caricamento…</div>';
-  var booksSnap = await getDocs(query(collection(db, 'bookings'), where('userId','==',userId)));
-  var books = booksSnap.docs.map(function(d) { return Object.assign({ id:d.id }, d.data()); });
-  if (!books.length) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nessuna prenotazione.</div>';
-    return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Caricamento...</div>';
+  try {
+    var booksSnap = await getDocs(collection(db, 'bookings'));
+    var books = booksSnap.docs
+      .map(function(d) { return Object.assign({id:d.id}, d.data()); })
+      .filter(function(b) { return b.userId === userId; });
+
+    if (!books.length) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nessuna prenotazione.</div>';
+      return;
+    }
+
+    // Carica slot unici
+    var slotIds = [];
+    books.forEach(function(b) { if (b.slotId && slotIds.indexOf(b.slotId)===-1) slotIds.push(b.slotId); });
+    var slotsMap = {};
+    for (var i=0; i<slotIds.length; i++) {
+      try {
+        var snap = await getDoc(doc(db, 'slots', slotIds[i]));
+        if (snap.exists()) slotsMap[slotIds[i]] = snap.data();
+      } catch(e) {}
+    }
+
+    var coursesSnap = await getDocs(collection(db, 'courses'));
+    var courseMap = {};
+    coursesSnap.docs.forEach(function(d) { courseMap[d.id] = d.data(); });
+
+    var sorted = books.sort(function(a, b_) {
+      var sa = slotsMap[a.slotId]; var sb = slotsMap[b_.slotId];
+      return (sb&&sb.date||'') > (sa&&sa.date||'') ? 1 : -1;
+    }).slice(0, 20);
+
+    container.innerHTML = sorted.map(function(b) {
+      var slot   = slotsMap[b.slotId];
+      var course = courseMap[slot&&slot.courseId];
+      var hour   = slot ? String(slot.hour).padStart(2,'0')+':00' : '—';
+      var isCan  = b.status === 'cancelled';
+      return '<div class="history-item">'
+        + '<div class="history-dot" style="' + (isCan?'background:var(--magenta)':'') + '"></div>'
+        + '<div><div class="history-text" style="' + (isCan?'text-decoration:line-through;color:var(--text-muted)':'') + '">'
+        + (course&&course.name||'Lezione') + ' — ' + hour + ' — ' + (slot&&slot.date||'—')
+        + '</div><div class="history-date">' + (isCan?'Disdetta':'Confermata') + '</div></div></div>';
+    }).join('');
+  } catch(err) {
+    console.error('loadDetailPrenotazioni error:', err);
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Errore caricamento prenotazioni.</div>';
   }
-  var slotIds  = [...new Set(books.map(function(b) { return b.slotId; }))];
-  var slotsMap = {};
-  await Promise.all(slotIds.map(async function(sid) {
-    var snap = await getDoc(doc(db, 'slots', sid));
-    if (snap.exists()) slotsMap[sid] = snap.data();
-  }));
-  var coursesSnap = await getDocs(collection(db, 'courses'));
-  var courseMap   = {};
-  coursesSnap.docs.forEach(function(d) { courseMap[d.id] = d.data(); });
-  var sorted = books.sort(function(a, b) {
-    var sa = slotsMap[a.slotId]; var sb = slotsMap[b.slotId];
-    return (sb && sb.date || '') > (sa && sa.date || '') ? 1 : -1;
-  }).slice(0, 20);
-  container.innerHTML = sorted.map(function(b) {
-    var slot   = slotsMap[b.slotId];
-    var course = courseMap[slot && slot.courseId];
-    var hour   = slot ? String(slot.hour).padStart(2,'0') + ':00' : '—';
-    var isCan  = b.status === 'cancelled';
-    return '<div class="history-item">'
-      + '<div class="history-dot" style="' + (isCan ? 'background:var(--magenta)' : '') + '"></div>'
-      + '<div><div class="history-text" style="' + (isCan ? 'text-decoration:line-through;color:var(--text-muted)' : '') + '">'
-      + (course && course.name || 'Lezione') + ' — ' + hour + ' — ' + (slot && slot.date || '—')
-      + '</div><div class="history-date">' + (isCan ? 'Disdetta' : 'Confermata') + '</div></div></div>';
-  }).join('');
 }
 
 async function loadDetailPagamenti(userId) {
   var container = document.getElementById('listaPagamenti');
-  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Caricamento…</div>';
-  var snap = await getDocs(query(collection(db, 'payments'), where('userId','==',userId)));
-  var pags = snap.docs.map(function(d) { return Object.assign({ id:d.id }, d.data()); })
-    .sort(function(a, b) {
-      var da = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date || 0);
-      var db_ = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date || 0);
-      return db_ - da;
-    });
-  if (!pags.length) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nessun pagamento registrato.</div>';
-    return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Caricamento...</div>';
+  try {
+    var snap = await getDocs(collection(db, 'payments'));
+    var pags = snap.docs
+      .map(function(d) { return Object.assign({id:d.id}, d.data()); })
+      .filter(function(p) { return p.userId === userId; })
+      .sort(function(a, b) {
+        var da = a.date&&a.date.toDate?a.date.toDate():new Date(a.date||0);
+        var db_ = b.date&&b.date.toDate?b.date.toDate():new Date(b.date||0);
+        return db_ - da;
+      });
+
+    if (!pags.length) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nessun pagamento registrato.</div>';
+      return;
+    }
+
+    var tipoLabel = {lesson:'Singola lezione', subscription:'Abbonamento', credit:'Ricarica credito'};
+    container.innerHTML = pags.map(function(p) {
+      return '<div class="history-item">'
+        + '<div class="history-dot pay"></div>'
+        + '<div><div class="history-text">'
+        + (tipoLabel[p.type]||p.type) + (p.amount>0?' — \u20ac'+p.amount:'') + (p.notes?' ('+p.notes+')':'')
+        + '</div><div class="history-date">' + formatDate(p.date) + '</div></div></div>';
+    }).join('');
+  } catch(err) {
+    console.error('loadDetailPagamenti error:', err);
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Errore caricamento pagamenti.</div>';
   }
-  var tipoLabel = { lesson:'Singola lezione', subscription:'Abbonamento', credit:'Ricarica credito' };
-  container.innerHTML = pags.map(function(p) {
-    return '<div class="history-item">'
-      + '<div class="history-dot pay"></div>'
-      + '<div><div class="history-text">'
-      + (tipoLabel[p.type] || p.type) + (p.amount > 0 ? ' — €' + p.amount : '') + (p.notes ? ' (' + p.notes + ')' : '')
-      + '</div><div class="history-date">' + formatDate(p.date) + '</div></div></div>';
-  }).join('');
 }
 
 function closeDetail() {
