@@ -21,7 +21,7 @@
     .cal-nav-btn:hover { border-color: var(--blu); color: var(--blu); }
     .cal-period {
       font-size: .88rem; font-weight: 800;
-      min-width: 200px; text-align: center; color: var(--text);
+      min-width: 220px; text-align: center; color: var(--text);
     }
     .filter-select {
       padding: 7px 28px 7px 10px;
@@ -35,27 +35,22 @@
 
     /* ── Legenda ── */
     .legenda {
-      display: flex; gap: 12px; flex-wrap: wrap;
+      display: flex; gap: 16px; flex-wrap: wrap;
       margin-bottom: 14px; align-items: center;
     }
     .legenda-item {
-      display: flex; align-items: center; gap: 5px;
-      font-size: .72rem; font-weight: 600; color: var(--text-muted);
+      display: flex; align-items: center; gap: 6px;
+      font-size: .72rem; font-weight: 700; color: var(--text-muted);
     }
-    .legenda-dot {
-      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-    }
+    .legenda-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 
-    /* ── Griglia calendario ── */
+    /* ── Griglia ── */
     .cal-wrap { overflow-x: auto; }
     .cal-grid {
       display: grid;
       grid-template-columns: 52px repeat(6, 1fr);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: var(--white);
-      min-width: 720px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; background: var(--white); min-width: 720px;
     }
     .cal-head-empty {
       background: var(--bg); border-bottom: 1px solid var(--border);
@@ -68,55 +63,51 @@
       font-size: .72rem; font-weight: 700;
       color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em;
     }
-    .cal-head-day.today { background: var(--blu-light); color: var(--blu); }
+    .cal-head-day.today { background: #e8f5e9; color: #1a8a45; }
     .cal-head-day .day-num {
-      display: block; font-size: 1.1rem; font-weight: 800;
-      color: var(--text); margin-top: 2px;
+      display: block; font-size: 1.1rem; font-weight: 800; color: var(--text); margin-top: 2px;
     }
-    .cal-head-day.today .day-num { color: var(--blu); }
+    .cal-head-day.today .day-num { color: #1a8a45; }
     .cal-time {
-      padding: 0 6px; display: flex; align-items: flex-start;
-      justify-content: flex-end; padding-top: 6px;
-      font-size: .68rem; font-weight: 700; color: var(--text-muted);
-      background: var(--bg); border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border); min-height: 64px;
+      padding: 6px 6px 0; display: flex; align-items: flex-start;
+      justify-content: flex-end; font-size: .68rem; font-weight: 700;
+      color: var(--text-muted); background: var(--bg);
+      border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      min-height: 68px;
     }
     .cal-cell {
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      min-height: 64px; padding: 3px; position: relative;
-      transition: background .15s;
+      border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      min-height: 68px; padding: 3px; position: relative; transition: background .15s;
     }
-    .cal-cell.today-col { background: #fafcff; }
-    .cal-cell-inner {
-      display: flex; flex-direction: column; gap: 2px; height: 100%;
-    }
+    .cal-cell.today-col { background: #f9fef9; }
+    .cal-cell-inner { display: flex; flex-direction: column; gap: 2px; height: 100%; }
 
     /* ── Slot card ── */
     .slot-card {
-      border-radius: 5px; padding: 4px 6px;
-      font-size: .68rem; cursor: pointer;
-      transition: filter .15s; position: relative;
-      flex-shrink: 0;
+      border-radius: 5px; padding: 5px 7px; font-size: .68rem;
+      cursor: pointer; transition: filter .15s; position: relative;
+      color: #fff; flex-shrink: 0;
     }
-    .slot-card:hover { filter: brightness(.92); }
-    .slot-card.free     { color: #fff; }
-    .slot-card.full     { color: #fff; opacity: .85; }
-    .slot-card.closed   {
+    .slot-card:hover { filter: brightness(.88); }
+    .slot-card.disponibile { background: #1a8a45; }
+    .slot-card.quasi-pieno { background: #c9821a; }
+    .slot-card.completo    { background: #e6165c; }
+    .slot-card.chiuso {
       background: repeating-linear-gradient(
-        45deg, #f5e6c8, #f5e6c8 4px, #fdf3e1 4px, #fdf3e1 10px
+        45deg, #f0f0f0, #f0f0f0 4px, #e0e0e0 4px, #e0e0e0 10px
       );
-      color: var(--slot-closed); border: 1px solid #f5d89a;
+      color: #888; border: 1px solid #ccc; cursor: default;
     }
-    .slot-card-course   { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .slot-card-info     { opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .slot-card-bar      { height: 3px; background: rgba(255,255,255,.3); border-radius: 2px; margin-top: 3px; overflow: hidden; }
-    .slot-card-bar-fill { height: 100%; background: rgba(255,255,255,.8); border-radius: 2px; }
+    .slot-card-course { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-card-info   { opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .slot-card-posti  { font-weight: 800; margin-top: 2px; font-size: .7rem; }
+    .slot-card-bar    { height: 3px; background: rgba(255,255,255,.3); border-radius: 2px; margin-top: 3px; overflow: hidden; }
+    .slot-card-bar-fill { height: 100%; background: rgba(255,255,255,.85); border-radius: 2px; }
 
-    /* ── Cella vuota cliccabile ── */
+    /* ── Cella vuota ── */
     .slot-empty {
       position: absolute; inset: 2px;
-      border: 1.5px dashed var(--border); border-radius: 5px;
+      border: 1.5px dashed #d0d8e4; border-radius: 5px;
       display: flex; align-items: center; justify-content: center;
       color: var(--text-muted); cursor: pointer; opacity: 0;
       transition: opacity .18s; font-size: .7rem; font-weight: 700; gap: 4px;
@@ -125,40 +116,27 @@
 
     /* ── Pannello laterale ── */
     .side-panel {
-      position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+      position: fixed; top: 0; right: -440px; width: 420px; height: 100vh;
       background: #fff; box-shadow: -4px 0 32px rgba(0,0,0,.14);
-      z-index: 300; transition: right .25s ease;
-      display: flex; flex-direction: column;
+      z-index: 300; transition: right .25s ease; display: flex; flex-direction: column;
     }
     .side-panel.open { right: 0; }
     .side-panel-header {
       padding: 20px 22px 14px; border-bottom: 1px solid var(--border);
       display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
     }
-    .side-panel-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
-    .side-panel-footer {
-      padding: 14px 22px; border-top: 1px solid var(--border);
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
-    .panel-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.25);
-      z-index: 299; display: none;
-    }
+    .side-panel-body   { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .side-panel-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+    .panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 299; display: none; }
     .panel-overlay.open { display: block; }
-    .slot-detail-box {
-      background: var(--bg); border-radius: var(--radius-sm);
-      padding: 12px 14px; margin-bottom: 14px;
-    }
-    .slot-detail-row {
-      display: flex; justify-content: space-between;
-      font-size: .8rem; padding: 4px 0; border-bottom: 1px solid var(--border);
-    }
+    .slot-detail-box { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; }
+    .slot-detail-row { display: flex; justify-content: space-between; font-size: .8rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
     .slot-detail-row:last-child { border-bottom: none; }
     .slot-detail-label { color: var(--text-muted); font-weight: 600; }
     .slot-detail-val   { color: var(--text); font-weight: 700; }
     .prenotato-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .8rem;
+      padding: 9px 0; border-bottom: 1px solid var(--border); font-size: .8rem;
     }
     .prenotato-item:last-child { border-bottom: none; }
     .prenotato-avatar {
@@ -198,28 +176,36 @@
       text-transform: uppercase; letter-spacing: .08em;
       margin: 16px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--blu-light);
     }
-    .radio-group  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .radio-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
     .radio-opt {
-      display: flex; align-items: center; gap: 6px;
-      padding: 7px 12px; border: 1.5px solid var(--border);
-      border-radius: 6px; cursor: pointer; font-size: .78rem;
-      font-weight: 600; color: var(--text-muted); transition: all .18s; flex: 1;
+      display: flex; align-items: center; gap: 6px; padding: 7px 12px;
+      border: 1.5px solid var(--border); border-radius: 6px; cursor: pointer;
+      font-size: .78rem; font-weight: 600; color: var(--text-muted); transition: all .18s; flex: 1;
     }
     .radio-opt input { display: none; }
     .radio-opt.selected { border-color: var(--blu); color: var(--blu); background: var(--blu-light); }
 
-    /* ── Modal elimina ripetuti ── */
-    .delete-choice {
-      display: flex; flex-direction: column; gap: 10px; margin: 16px 0;
-    }
+    /* ── Modal elimina ── */
+    .delete-choice { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
     .delete-option {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 14px; border: 1.5px solid var(--border);
-      border-radius: 8px; cursor: pointer; transition: all .18s;
-      font-size: .82rem; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+      transition: all .18s; font-size: .82rem; font-weight: 600; color: var(--text);
     }
-    .delete-option:hover { border-color: var(--magenta); background: #fef0f4; }
-    .delete-option svg { color: var(--magenta); flex-shrink: 0; }
+    .delete-option:hover { border-color: var(--magenta); background: #fef0f4; color: var(--magenta); }
+    .delete-option svg { flex-shrink: 0; }
+
+    /* ── Modal messaggio ── */
+    .msg-recipient {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .8rem;
+    }
+    .msg-recipient:last-child { border-bottom: none; }
+    .msg-avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--blu-light);
+      color: var(--blu); font-size: .68rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
 
     /* ── Toast ── */
     #toast-container { position:fixed; bottom:24px; right:24px; z-index:500; display:flex; flex-direction:column; gap:10px; }
@@ -246,7 +232,7 @@
 
     <div class="page-content">
 
-      <!-- Toolbar navigazione + filtri -->
+      <!-- Toolbar -->
       <div class="cal-toolbar">
         <div class="cal-nav">
           <button class="cal-nav-btn" id="btnPrevWeek">
@@ -264,7 +250,12 @@
       </div>
 
       <!-- Legenda -->
-      <div class="legenda" id="legenda"></div>
+      <div class="legenda">
+        <div class="legenda-item"><div class="legenda-dot" style="background:#1a8a45"></div>Disponibile</div>
+        <div class="legenda-item"><div class="legenda-dot" style="background:#c9821a"></div>Quasi pieno</div>
+        <div class="legenda-item"><div class="legenda-dot" style="background:#e6165c"></div>Completo</div>
+        <div class="legenda-item"><div class="legenda-dot" style="background:#ccc;border:1px solid #aaa"></div>Chiuso</div>
+      </div>
 
       <!-- Griglia -->
       <div class="cal-wrap">
@@ -275,14 +266,13 @@
   </div>
 </div>
 
-<!-- Overlay pannello -->
 <div class="panel-overlay" id="panelOverlay"></div>
 
 <!-- Pannello dettaglio slot -->
 <div class="side-panel" id="sidePanel">
   <div class="side-panel-header">
     <div>
-      <div style="font-size:1rem;font-weight:800;color:var(--text);" id="panelTitle">Dettaglio lezione</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--text);" id="panelTitle"></div>
       <div style="font-size:.78rem;color:var(--text-muted);margin-top:3px;" id="panelSub"></div>
     </div>
     <button class="modal-close" id="btnClosePanel">
@@ -291,20 +281,30 @@
   </div>
   <div class="side-panel-body">
     <div class="slot-detail-box" id="panelInfo"></div>
-    <div style="font-size:.8rem;font-weight:800;color:var(--text);margin-bottom:8px;" id="panelPrenotatiTitle"></div>
+    <div style="font-size:.8rem;font-weight:800;color:var(--text);margin-bottom:10px;" id="panelPrenotatiTitle"></div>
     <div id="panelPrenotati"></div>
   </div>
   <div class="side-panel-footer">
-    <button class="btn btn-secondary" id="btnPanelModifica">Modifica</button>
-    <button class="btn btn-ghost"     id="btnPanelChiudi">Chiudi sala</button>
-    <button class="btn btn-ghost"     id="btnPanelMessaggio">
+    <button class="btn btn-secondary" id="btnPanelModifica">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Modifica
+    </button>
+    <button class="btn btn-danger" id="btnPanelElimina">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      Elimina
+    </button>
+    <button class="btn btn-ghost" id="btnPanelChiudi">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span id="btnPanelChiudiLabel">Chiudi sala</span>
+    </button>
+    <button class="btn btn-ghost" id="btnPanelMessaggio">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Messaggio
     </button>
   </div>
 </div>
 
-<!-- ══════════════ MODAL LEZIONE ══════════════ -->
+<!-- Modal Lezione -->
 <div class="modal-backdrop" id="modalLezione">
   <div class="modal">
     <div class="modal-header">
@@ -320,7 +320,7 @@
           <input type="date" class="form-control" id="lezData" />
         </div>
         <div class="form-group">
-          <label class="form-label">Ora inizio</label>
+          <label class="form-label">Ora</label>
           <select class="form-control" id="lezOra"></select>
         </div>
       </div>
@@ -340,24 +340,19 @@
         <label class="form-label">Capienza massima</label>
         <input type="number" class="form-control" id="lezCapienza" min="1" value="5" />
       </div>
-
       <div class="form-section-title">Ripeti</div>
       <div class="radio-group" id="radioRipeti">
-        <label class="radio-opt selected">
-          <input type="radio" name="ripeti" value="once" checked />Solo questa volta
-        </label>
-        <label class="radio-opt">
-          <input type="radio" name="ripeti" value="week" />Tutta la settimana
-        </label>
-        <label class="radio-opt">
-          <input type="radio" name="ripeti" value="month" />Tutto il mese
-        </label>
+        <label class="radio-opt selected"><input type="radio" name="ripeti" value="once" checked />Solo questa volta</label>
+        <label class="radio-opt"><input type="radio" name="ripeti" value="week" />Tutta la settimana</label>
+        <label class="radio-opt"><input type="radio" name="ripeti" value="month" />Tutto il mese</label>
       </div>
-
       <div id="modalLezError" style="display:none;background:#fef0f4;color:var(--magenta);border:1px solid #f9c4d3;border-radius:6px;padding:10px 14px;font-size:.8rem;font-weight:600;margin-top:12px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="btnEliminaLezione" style="display:none;">Elimina</button>
+      <button class="btn btn-danger" id="btnEliminaLezione" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Elimina lezione
+      </button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" data-close="modalLezione">Annulla</button>
         <button class="btn btn-primary" id="btnSalvaLezione">
@@ -369,7 +364,7 @@
   </div>
 </div>
 
-<!-- Modal conferma elimina ripetuti -->
+<!-- Modal elimina ripetuti -->
 <div class="modal-backdrop" id="modalElimina">
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
@@ -393,6 +388,43 @@
     </div>
     <div class="modal-footer" style="justify-content:flex-end;">
       <button class="btn btn-ghost" data-close="modalElimina">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal messaggio prenotati -->
+<div class="modal-backdrop" id="modalMessaggio">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">Invia messaggio ai prenotati</div>
+      <button class="modal-close" data-close="modalMessaggio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="msgSlotInfo" style="background:var(--bg);border-radius:6px;padding:10px 12px;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:14px;"></div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:8px;" id="msgRecipientsTitle"></div>
+      <div id="msgRecipients" style="margin-bottom:16px;max-height:180px;overflow-y:auto;"></div>
+      <div class="form-group">
+        <label class="form-label">Testo del messaggio</label>
+        <textarea class="form-control" id="msgTesto" rows="4" style="resize:vertical;" placeholder="Scrivi il messaggio…"></textarea>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px;">
+        Variabili disponibili: <strong>{nome}</strong>, <strong>{corso}</strong>, <strong>{ora}</strong>, <strong>{giorno}</strong>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-ghost" data-close="modalMessaggio">Annulla</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" id="btnMsgWA">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp uno a uno
+        </button>
+        <button class="btn btn-primary" id="btnMsgEmail">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email a tutti
+        </button>
+      </div>
     </div>
   </div>
 </div>
